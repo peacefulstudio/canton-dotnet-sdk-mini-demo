@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>MiniDemo</RootNamespace>
+    <AssemblyName>MiniDemo</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="MiniDemo.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../MiniDemo.Contracts/MiniDemo.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Daml.Runtime" />
+    <PackageReference Include="Daml.Ledger.Abstractions" />
+    <PackageReference Include="Canton.Ledger.Grpc.Client" />
+    <PackageReference Include="Canton.Ledger.Kernel" />
+    <PackageReference Include="Peaceful.Canton.Localnet.Testing" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,16 @@
+# .NET build output
+bin/
+obj/
+
+# Daml build output (the .dar is rebuilt by scripts/codegen.sh)
+.daml/
+
+# IDE
+.vs/
+.idea/
+*.user
+
+# Local NuGet credential overrides
+NuGet.local.config
+
+# NOTE: src/MiniDemo.Contracts/Generated is intentionally committed (the codegen output).

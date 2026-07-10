@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MiniDemo.Contracts/MiniDemo.Contracts.csproj" />
+    <Project Path="src/MiniDemo/MiniDemo.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MiniDemo.Tests/MiniDemo.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+  <CodeCoverage>
+    <ModulePaths>
+      <Exclude>
+        <ModulePath>.*\.Tests\.dll$</ModulePath>
+        <ModulePath>.*[/\\]testhost\.dll$</ModulePath>
+      </Exclude>
+    </ModulePaths>
+    <Sources>
+      <Exclude>
+        <Source>.*[/\\]obj[/\\].*</Source>
+        <Source>.*[/\\]Generated[/\\].*</Source>
+      </Exclude>
+    </Sources>
+    <Attributes>
+      <Exclude>
+        <Attribute>^System\.Diagnostics\.DebuggerHiddenAttribute$</Attribute>
+        <Attribute>^System\.Diagnostics\.DebuggerNonUserCodeAttribute$</Attribute>
+        <Attribute>^System\.ObsoleteAttribute$</Attribute>
+        <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+        <Attribute>^System\.Runtime\.CompilerServices\.CompilerGeneratedAttribute$</Attribute>
+      </Exclude>
+    </Attributes>
+    <SkipAutoProps>True</SkipAutoProps>
+    <UseVerifiableInstrumentation>False</UseVerifiableInstrumentation>
+    <AllowLowIntegrityProcesses>True</AllowLowIntegrityProcesses>
+    <CollectFromChildProcesses>True</CollectFromChildProcesses>
+    <CollectAspDotNet>False</CollectAspDotNet>
+  </CodeCoverage>
+</Configuration>
