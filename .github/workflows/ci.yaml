@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  packages: read
+  pull-requests: write
+
+jobs:
+  csharp-ci:
+    uses: peacefulstudio/github-actions/.github/workflows/csharp-ci.yaml@v2
+    with:
+      dotnet-version: '10.0.x'
+      artifact-prefix: csharp
+      build-matrix: >-
+        [{"name":"linux","runner":"ubuntu-latest","coverage":true},
+         {"name":"windows","runner":"windows-latest","coverage":false}]
