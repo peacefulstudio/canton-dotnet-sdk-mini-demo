@@ -14,16 +14,19 @@ internal static class AssetAcsQuery
         ILedgerClient ledgerClient, Party party, CancellationToken ct)
     {
         var assets = new List<AssetSnapshot>();
-        await foreach (var evt in ledgerClient.SubscribeActiveAsync<DemoAsset>(party, ct))
+        await foreach (var evt in ledgerClient.SubscribeActiveAsync<DemoAsset>(party, cancellationToken: ct))
             switch (evt)
             {
-                case ContractStreamEvent<DemoAsset>.Created created:
+                case AcsSnapshotEntry<DemoAsset>.Created created:
                     var asset = DemoAsset.FromRecord(created.Payload);
                     assets.Add(new AssetSnapshot(created.ContractId.Value, asset.Owner.Id, asset.Name, asset.Amount));
                     break;
-                case ContractStreamEvent<DemoAsset>.Unclassified unclassified:
+                case AcsSnapshotEntry<DemoAsset>.StreamError streamError:
                     throw new InvalidOperationException(
-                        $"ACS snapshot returned an unclassified event at offset {unclassified.Offset} " +
+                        $"ACS snapshot stream failed (status {streamError.StatusCode}): {streamError.Message}");
+                case AcsSnapshotEntry<DemoAsset>.Unclassified unclassified:
+                    throw new InvalidOperationException(
+                        $"ACS snapshot returned an unclassified event at offset {unclassified.Offset.Value} " +
                         $"(kind: {unclassified.Kind}); an Asset contract may have failed to map to the generated DemoAsset type.");
             }
         return assets;

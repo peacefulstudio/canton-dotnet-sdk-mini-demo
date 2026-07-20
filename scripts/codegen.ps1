@@ -6,7 +6,7 @@
 # src/MiniDemo.Contracts/Generated via dpm build + dpm codegen-cs.
 # Windows-friendly twin of scripts/codegen.sh (Windows PowerShell 5.1 and PowerShell 7+).
 # Requires:
-#   - dpm  >= 1.0.12  (oci:// component URIs; see https://docs.digitalasset.com, then `dpm install 3.4.11`)
+#   - dpm  >= 1.0.20  (oci:// component URIs; see https://docs.digitalasset.com, then `dpm install 3.4.11`)
 #   - java (JDK 17+, the codegen component's bundled JVM helper decodes the DAR)
 
 #Requires -Version 5.1
@@ -17,7 +17,7 @@ $RepoRoot   = Split-Path -Parent $PSScriptRoot
 $DamlDir    = Join-Path $RepoRoot 'daml'
 $CodegenDir = Join-Path $RepoRoot 'codegen'
 $OutDir     = Join-Path $RepoRoot 'src/MiniDemo.Contracts/Generated'
-$DpmFloor   = [version]'1.0.12'
+$DpmFloor   = [version]'1.0.20'
 $DpmHint    = "install dpm (need >= $DpmFloor) then 'dpm install 3.4.11'"
 
 function Assert-OnPath([string] $Command, [string] $Hint) {

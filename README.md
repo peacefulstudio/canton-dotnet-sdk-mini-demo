@@ -183,15 +183,18 @@ The bootstrap (DAR upload + party allocation) goes over the **JSON Ledger API** 
 | Tool | Version | Why |
 |------|---------|-----|
 | **.NET SDK** | `>= 10.0.100` | builds and runs the app (`dotnet --version`) |
-| **dpm** (Daml Package Manager) | `>= 1.0.12` | `dpm codegen-cs` needs the `oci://` component syntax |
+| **dpm** (Daml Package Manager) | `>= 1.0.20` | `dpm codegen-cs` needs the `oci://` component syntax; `>= 1.0.20` verifies component digests on a cache hit |
 | **JDK** | `17+` | the codegen component runs a JVM helper to decode the DAR |
 | **Canton LocalNet** | running | the ledger the demo talks to — this repo does **not** start one |
 
-Install `dpm` and the pinned Daml SDK:
+Install `dpm` and the pinned Daml SDK. Pin the installer to a specific release (`3.5.2` lands dpm
+launcher `1.0.21`) rather than riding `latest` — a moving target, and dpm `< 1.0.20` can reuse a
+stale same-name codegen component from cache without verifying its digest:
 
 ```bash
-curl -sSL https://get.digitalasset.com/install/install.sh | sh
+curl -sSL https://get.digitalasset.com/install/install.sh | sh -s -- 3.5.2
 export PATH="$HOME/.dpm/bin:$PATH"
+dpm --version               # expect 1.0.21
 dpm install 3.4.11          # the SDK this demo builds against (same package-id)
 ```
 
@@ -233,7 +236,7 @@ Three commands (each also wrapped by a `make` target):
 ```bash
 ./scripts/codegen.sh                 # 1. dpm build → dpm codegen-cs → (re)generate C# bindings   [make codegen]
 dotnet build MiniDemo.slnx           # 2. build the .NET solution                                  [make build]
-dotnet run --project src/MiniDemo    # 3. run the integration test (needs LocalNet + env vars)     [make run]
+dotnet run --project src/MiniDemo    # 3. run the integration test (needs a running LocalNet; env vars optional) [make run]
 ```
 
 **Windows:** run step 1 as `pwsh scripts/codegen.ps1` — a faithful PowerShell twin of `codegen.sh`
@@ -291,7 +294,7 @@ the **participant's own transaction stream** and confirm the create and the `ali
 actually landed on-ledger. The Daml SDK ships a Canton console for exactly this: `dpm canton-console`.
 
 > Needs a running LocalNet (the same single-sync **a-validator-1** the demo targets by default) and
-> `dpm >= 1.0.12`. None of this is required to run the demo — it's a verification aid.
+> `dpm >= 1.0.20`. None of this is required to run the demo — it's a verification aid.
 
 **1. Write a console config** pointing at a-validator-1's Ledger + Admin APIs (this is LocalNet's own
 console config with the container address swapped for `localhost`):
@@ -381,9 +384,14 @@ is exactly the Asset now sitting in bob's active contract set. Type `exit` to le
 
 ## The code, section by section
 
-`Program.cs` is a thin entry point that hands off to `MiniDemoRunner`, which walks through the
-round-trip step by step; `AssetAcsQuery` owns the ACS query and `ExerciseOutcomeExtensions` owns the
-`Unwrap` helper. Each console section maps to an SDK concept:
+`Program.cs` is a thin entry point that reads the environment, prints the target-endpoint banner, and
+hands off to `MiniDemoRunner`, which walks through the round-trip step by step; `AssetAcsQuery` owns
+the ACS query and `ExerciseOutcomeExtensions` owns the `Unwrap` helper. Three small modules keep the
+wiring honest: `LocalnetPreflight` builds that startup banner and classifies "LocalNet unreachable"
+socket errors into a friendly hint (so an unreachable ledger exits `1` with guidance, never a silent
+no-op); `LedgerEndpoint` resolves the gRPC Ledger API address (`CANTON_LOCALNET_LEDGER_GRPC`, default
+`http://localhost:11901`); and `DarLocator` finds the built `.dar` (`MINI_DEMO_DAR` if set, else the
+most recent archive under `daml/.daml/dist/`). Each console section maps to an SDK concept:
 
 | Console section | What it exercises | Key SDK surface |
 |-----------------|-------------------|-----------------|
@@ -421,14 +429,21 @@ Both `CreateAsync` and `TransferAsync` return an **`ExerciseOutcome<T>`** — a 
 distinguishes success (`One`), a Daml validation error (`DamlError` with error-id / category /
 message), an infrastructure/transport error (`InfraError`), and the empty / multiple cardinality
 cases. The demo's `Unwrap` helper collapses that to "give me the one result or throw a clear
-exception", and is the one piece of logic covered by unit tests (`tests/MiniDemo.Tests/UnwrapTests.cs`).
+exception".
 
 The ACS query (step 5) uses the typed `ledgerClient.SubscribeActiveAsync<Asset>(party, ct)` stream —
 a snapshot of the active contract set at the current ledger end, filtered to the `Asset` template by
-its generated `TemplateId`. `AssetAcsQuery` switches on the resulting `ContractStreamEvent<Asset>`:
-`Created` events are mapped to an `AssetSnapshot`; an `Unclassified` event (one the SDK couldn't map
-to `Asset`) throws rather than being silently dropped, so a codegen/package-id mismatch surfaces
-immediately instead of showing up as a missing contract.
+its generated `TemplateId`. `AssetAcsQuery` switches on the resulting `AcsSnapshotEntry<Asset>`:
+`Created` events are mapped to an `AssetSnapshot`, while a `StreamError` (transport failure) or an
+`Unclassified` event (one the SDK couldn't map to `Asset`) throws rather than being silently dropped,
+so a codegen/package-id mismatch surfaces immediately instead of showing up as a missing contract.
+
+The LocalNet-free logic is covered by **xUnit v3 unit tests** in `tests/MiniDemo.Tests/`:
+`UnwrapTests` pins every `ExerciseOutcome<T>` branch of `Unwrap`; `AssetAcsQueryTests` drives
+`AssetAcsQuery` through a fake ledger client (created events map to snapshots; stream-error and
+unclassified events throw); `LedgerEndpointTests` covers the gRPC-address env resolution and its
+default; and `LocalnetPreflightTests` covers the startup banner and the socket-error "unreachable"
+classifier.
 
 ---
 
@@ -523,9 +538,16 @@ scripts/
 src/
   MiniDemo.Contracts/             # generated C# bindings (committed) + csproj
     Generated/Canton/Mini/Demo/   #   Asset.cs, Asset.Transfer.cs, …
-  MiniDemo/                       # the console CLI (Program.cs)
+  MiniDemo/                       # the console CLI
+    Program.cs                    #   entry point: read env → print banner → MiniDemoRunner
+    MiniDemoRunner.cs             #   bootstrap → create → transfer → ACS-query round-trip
+    AssetAcsQuery.cs              #   typed active-contract-set query → AssetSnapshot list
+    ExerciseOutcomeExtensions.cs  #   Unwrap: ExerciseOutcome<T> → the one result or a clear throw
+    LocalnetPreflight.cs          #   startup endpoint banner + "unreachable" socket-error classifier
+    LedgerEndpoint.cs             #   resolve the gRPC Ledger API address (env, default :11901)
+    DarLocator.cs                 #   locate the built .dar (MINI_DEMO_DAR or newest build output)
 tests/
-  MiniDemo.Tests/                 # xUnit v3 tests for the Unwrap helper
+  MiniDemo.Tests/                 # xUnit v3 unit tests: Unwrap, AssetAcsQuery, LedgerEndpoint, LocalnetPreflight
 MiniDemo.slnx
 Directory.Packages.props          # central SDK package versions
 NuGet.config                      # nuget.org only — no private feed
@@ -543,13 +565,13 @@ component for `dpm codegen-cs`.
 | Component | Version |
 |-----------|---------|
 | Daml SDK (`dpm install`) | `3.4.11` |
-| `dpm` launcher | `>= 1.0.12` (installer currently lands 1.0.21) |
-| `dpm-codegen-cs` OCI component | `0.3.0-preview.1` (pinned by digest) |
-| `Daml.Runtime` | `0.3.0-preview.1` |
-| `Daml.Ledger.Abstractions` | `0.3.0-preview.1` |
-| `Canton.Ledger.Grpc.Client` | `0.2.0-preview.1` |
-| `Canton.Ledger.Kernel` | `0.2.0-preview.1` |
-| `Peaceful.Canton.Localnet.Testing` | `0.6.10.1-preview.1` |
+| `dpm` launcher | `>= 1.0.20` (pin the installer to `3.5.2`, which lands `1.0.21`) |
+| `dpm-codegen-cs` OCI component | `0.4.0-preview.2` (pinned by digest) |
+| `Daml.Runtime` | `0.4.0-preview.2` |
+| `Daml.Ledger.Abstractions` | `0.4.0-preview.2` |
+| `Canton.Ledger.Grpc.Client` | `0.4.0-preview.1` |
+| `Canton.Ledger.Kernel` | `0.4.0-preview.1` |
+| `Peaceful.Canton.Localnet.Testing` | `0.6.11.1-preview.1` |
 | .NET SDK | `10.0` |
 
 All versions are centrally managed in `Directory.Packages.props` (Central Package Management).
@@ -560,7 +582,7 @@ All versions are centrally managed in `Directory.Packages.props` (Central Packag
 
 Two GitHub Actions workflows guard the two stages so the docs above never drift from reality:
 
-- **`ci.yaml`** — builds and tests the solution on every push/PR to `main`, delegating to the shared
+- **`ci.yaml`** — builds and tests the solution on every push/PR to `dev`, delegating to the shared
   `peacefulstudio/github-actions` reusable C# CI. It runs a **two-OS matrix — Linux (`self-hosted`,
   with code coverage) and Windows (`windows-latest`)** — so the solution is proven cross-platform on
   every change.
@@ -590,7 +612,7 @@ This demo consumes packages from the rest of the Canton .NET SDK. If you want th
 |---------|-----|
 | Connection refused / timeout on startup | Start a LocalNet, or point the demo at a running one via the `CANTON_LOCALNET_*` env vars (see [Quickstart](#quickstart)). The startup banner prints the endpoints being targeted. |
 | `… failed (infra, status 14)` after the banner | The friendly reachability message covers the HTTP bootstrap; this is the gRPC Ledger API leg failing separately. Usually `CANTON_LOCALNET_LEDGER_GRPC` (default `http://localhost:11901`) still points at `a-validator-1` while `CANTON_LOCALNET_JSON_API_URL` targets another slot. Align the gRPC endpoint on the banner with your JSON API slot. |
-| `dpm: command not found` / version too old | `curl -sSL https://get.digitalasset.com/install/install.sh \| sh`, add `~/.dpm/bin` to `PATH`, need `>= 1.0.12`. |
+| `dpm: command not found` / version too old | `curl -sSL https://get.digitalasset.com/install/install.sh \| sh -s -- 3.5.2`, add `~/.dpm/bin` to `PATH`, need `>= 1.0.20`. |
 | Codegen fails with a JVM/Java error | Ensure a **JDK 17+** is on `PATH` (`java -version`) — the codegen component needs it to decode the DAR. |
 | `codegen-drift` CI failing | Run `./scripts/codegen.sh` (Windows: `pwsh scripts/codegen.ps1`) locally and commit the updated `src/MiniDemo.Contracts/Generated/` files. |
 | Want to point at a specific DAR | Set `MINI_DEMO_DAR=/path/to/your.dar` before `dotnet run`. |

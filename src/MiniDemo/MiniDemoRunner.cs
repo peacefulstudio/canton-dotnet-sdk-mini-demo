@@ -4,6 +4,7 @@
 using Canton.Ledger.Grpc.Client;
 using Canton.Ledger.Kernel.Authentication;
 using Canton.Mini.Demo;
+using Daml.Ledger.Abstractions.Extensions;
 using Daml.Runtime.Commands;
 using Daml.Runtime.Contracts;
 using Daml.Runtime.Data;
@@ -79,7 +80,7 @@ internal sealed class MiniDemoRunner
             asset,
             submitter: new SubmitterInfo(parties.Issuer, new HashSet<Party>()),
             cancellationToken: ct);
-        var createdCid = outcome.Unwrap("Create");
+        var createdCid = outcome.Unwrap(nameof(CreateAssetAsync));
         Console.WriteLine($"Created Asset contract id: {createdCid.Value}");
         return createdCid;
     }
@@ -88,15 +89,19 @@ internal sealed class MiniDemoRunner
         LedgerClient ledgerClient, ContractId<DemoAsset> createdCid, DemoParties parties, CancellationToken ct)
     {
         Console.WriteLine("\n== 4. Exercise Transfer (alice -> bob) ==");
-        var outcome = await createdCid.TransferAsync(
-            ledgerClient,
-            new DemoAsset.Transfer(NewOwner: parties.Bob),
+        var command = new ExerciseCommand(
+            DemoAsset.TemplateId,
+            createdCid,
+            DemoAsset.ChoiceTransfer.Name,
+            new DemoAsset.Transfer(NewOwner: parties.Bob).ToRecord());
+        var outcome = await ledgerClient.TryCreateOneByExerciseAsync<DemoAsset>(
+            command,
             submitter: new SubmitterInfo(parties.Alice, new HashSet<Party> { parties.Bob }),
             workflowId: "mini-demo",
             cancellationToken: ct);
-        var transferResult = outcome.Unwrap("Transfer");
-        Console.WriteLine($"Transferred. New Asset contract id: {transferResult.Asset.Value}");
-        return transferResult.Asset.Value;
+        var transferredCid = outcome.Unwrap(nameof(TransferAsync));
+        Console.WriteLine($"Transferred. New Asset contract id: {transferredCid.Value}");
+        return transferredCid.Value;
     }
 
     private static async Task ReportActiveAssetsAsync(

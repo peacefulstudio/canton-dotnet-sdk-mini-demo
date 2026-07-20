@@ -7,11 +7,12 @@ help:
 	@echo "Targets:"
 	@echo "  make codegen   Build the Daml package and regenerate committed C# bindings"
 	@echo "  make build     dotnet build MiniDemo.slnx"
-	@echo "  make run       dotnet run --project src/MiniDemo (needs a running LocalNet + env vars)"
+	@echo "  make run       dotnet run --project src/MiniDemo (needs a running LocalNet; env vars optional)"
 	@echo "  make clean     Remove build output"
 	@echo ""
 	@echo "LocalNet itself is NOT started here. Bring it up from peacefulstudio/canton-localnet"
-	@echo "(e.g. 'make up' in that repo) and export the CANTON_LOCALNET_* discovery env vars."
+	@echo "(e.g. 'make up' in that repo). Against a stock local LocalNet no config is needed;"
+	@echo "override endpoints via CANTON_LOCALNET_* env vars only for a non-default/remote setup."
 
 codegen:
 	./scripts/codegen.sh
