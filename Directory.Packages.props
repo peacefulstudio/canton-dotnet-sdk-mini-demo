@@ -4,12 +4,13 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Daml C# runtime + ledger abstractions (the surface the generated bindings compile against). -->
-    <PackageVersion Include="Daml.Runtime" Version="0.3.0-preview.1" />
-    <PackageVersion Include="Daml.Ledger.Abstractions" Version="0.3.0-preview.1" />
+    <PackageVersion Include="Daml.Runtime" Version="0.4.0-preview.2" />
+    <PackageVersion Include="Daml.Ledger.Abstractions" Version="0.4.0-preview.2" />
     <!-- Canton gRPC Ledger API SDK + transport-neutral client kernel (auth/retry/telemetry). -->
-    <PackageVersion Include="Canton.Ledger.Grpc.Client" Version="0.2.0-preview.1" />
-    <PackageVersion Include="Canton.Ledger.Kernel" Version="0.2.0-preview.1" />
+    <PackageVersion Include="Canton.Ledger.Grpc.Client" Version="0.4.0-preview.1" />
+    <PackageVersion Include="Canton.Ledger.Kernel" Version="0.4.0-preview.1" />
     <!-- LocalNet bootstrap helper: uploads the DAR, allocates parties, mints a token via env discovery. -->
-    <PackageVersion Include="Peaceful.Canton.Localnet.Testing" Version="0.6.10.1-preview.1" />
+    <PackageVersion Include="Peaceful.Canton.Localnet.Testing" Version="0.6.11.1-preview.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
   </ItemGroup>
 </Project>

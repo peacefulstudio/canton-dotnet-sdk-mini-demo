@@ -22,13 +22,13 @@ public class AssetAcsQueryTests
     {
         var owner = new Party("bob");
         var asset = new DemoAsset(Issuer: new Party("issuer"), Owner: owner, Name: "GOLD", Amount: 42m);
-        var created = new ContractStreamEvent<DemoAsset>.Created(
+        var created = new AcsSnapshotEntry<DemoAsset>.Created(
             new ContractId<DemoAsset>("cid1"),
             asset.ToRecord(),
-            Offset: 1,
+            Offset: LedgerOffset.At(1),
             SynchronizerId: (SynchronizerId)"sync1",
             WitnessParties: new[] { owner });
-        var client = new FakeLedgerClient(new ContractStreamEvent<DemoAsset>[] { created });
+        var client = new FakeLedgerClient(new AcsSnapshotEntry<DemoAsset>[] { created });
 
         var result = await AssetAcsQuery.QueryForPartyAsync(client, owner, CancellationToken.None);
 
@@ -42,8 +42,8 @@ public class AssetAcsQueryTests
     [Fact]
     public async Task unclassified_events_throw_instead_of_being_silently_dropped()
     {
-        var unclassified = new ContractStreamEvent<DemoAsset>.Unclassified(Offset: 7, Kind: "unmapped-template");
-        var client = new FakeLedgerClient(new ContractStreamEvent<DemoAsset>[] { unclassified });
+        var unclassified = new AcsSnapshotEntry<DemoAsset>.Unclassified(Offset: LedgerOffset.At(7), Kind: "unmapped-template");
+        var client = new FakeLedgerClient(new AcsSnapshotEntry<DemoAsset>[] { unclassified });
 
         var act = () => AssetAcsQuery.QueryForPartyAsync(client, new Party("bob"), CancellationToken.None);
 
@@ -51,64 +51,83 @@ public class AssetAcsQueryTests
             .Which.Message.Should().Contain("offset 7").And.Contain("unmapped-template");
     }
 
+    [Fact]
+    public async Task created_events_are_mapped_even_when_followed_by_a_terminal_checkpoint()
+    {
+        var owner = new Party("bob");
+        var asset = new DemoAsset(Issuer: new Party("issuer"), Owner: owner, Name: "GOLD", Amount: 42m);
+        var created = new AcsSnapshotEntry<DemoAsset>.Created(
+            new ContractId<DemoAsset>("cid1"),
+            asset.ToRecord(),
+            Offset: LedgerOffset.At(1),
+            SynchronizerId: (SynchronizerId)"sync1",
+            WitnessParties: new[] { owner });
+        var checkpoint = new AcsSnapshotEntry<DemoAsset>.Checkpoint(Offset: LedgerOffset.At(2));
+        var client = new FakeLedgerClient(new AcsSnapshotEntry<DemoAsset>[] { created, checkpoint });
+
+        var result = await AssetAcsQuery.QueryForPartyAsync(client, owner, CancellationToken.None);
+
+        result.Should().ContainSingle();
+        result[0].ContractId.Should().Be("cid1");
+    }
+
+    [Fact]
+    public async Task stream_error_events_throw_with_status_and_message()
+    {
+        var streamError = new AcsSnapshotEntry<DemoAsset>.StreamError(StatusCode: 14, Message: "snapshot transport failed");
+        var client = new FakeLedgerClient(new AcsSnapshotEntry<DemoAsset>[] { streamError });
+
+        var act = () => AssetAcsQuery.QueryForPartyAsync(client, new Party("bob"), CancellationToken.None);
+
+        (await act.Should().ThrowAsync<InvalidOperationException>())
+            .Which.Message.Should().Contain("14").And.Contain("snapshot transport failed");
+    }
+
     private sealed class FakeLedgerClient : ILedgerClient
     {
-        private readonly IReadOnlyList<ContractStreamEvent<DemoAsset>> _events;
+        private readonly IReadOnlyList<AcsSnapshotEntry<DemoAsset>> _events;
 
-        public FakeLedgerClient(IReadOnlyList<ContractStreamEvent<DemoAsset>> events) => _events = events;
+        public FakeLedgerClient(IReadOnlyList<AcsSnapshotEntry<DemoAsset>> events) => _events = events;
 
-        public IAsyncEnumerable<ContractStreamEvent<T>> SubscribeActiveAsync<T>(Party actAs, CancellationToken cancellationToken) where T : IDamlType
+        public IAsyncEnumerable<AcsSnapshotEntry<T>> SubscribeActiveAsync<T>(SubmitterInfo submitter, LedgerOffset? activeAtOffset = null, CancellationToken cancellationToken = default) where T : IDamlType
         {
             if (typeof(T) != typeof(DemoAsset))
                 throw new NotSupportedException($"{nameof(FakeLedgerClient)} only supports {nameof(DemoAsset)}.");
-            return (IAsyncEnumerable<ContractStreamEvent<T>>)(object)Stream();
+            return (IAsyncEnumerable<AcsSnapshotEntry<T>>)(object)Stream();
         }
 
-        private async IAsyncEnumerable<ContractStreamEvent<DemoAsset>> Stream()
+        private async IAsyncEnumerable<AcsSnapshotEntry<DemoAsset>> Stream()
         {
             foreach (var evt in _events)
                 yield return evt;
             await Task.CompletedTask;
         }
 
-        public IAsyncEnumerable<ContractStreamEvent<T>> SubscribeActiveAsync<T>(SubmitterInfo submitter, CancellationToken cancellationToken) where T : IDamlType =>
+        public IAsyncEnumerable<ContractStreamEvent<T>> SubscribeAsync<T>(SubmitterInfo submitter, LedgerOffset? fromOffset = null, LedgerOffset? toOffset = null, CancellationToken cancellationToken = default) where T : IDamlType =>
             throw new NotImplementedException();
 
-        public IAsyncEnumerable<ContractStreamEvent<T>> SubscribeAsync<T>(Party actAs, long? fromOffset, CancellationToken cancellationToken) where T : IDamlType =>
+        public IAsyncEnumerable<ContractStreamEvent<T>> SubscribeLedgerEffectsAsync<T>(SubmitterInfo submitter, LedgerOffset? fromOffset = null, LedgerOffset? toOffset = null, CancellationToken cancellationToken = default) where T : IDamlType =>
             throw new NotImplementedException();
 
-        public IAsyncEnumerable<ContractStreamEvent<T>> SubscribeAsync<T>(SubmitterInfo submitter, long? fromOffset, CancellationToken cancellationToken) where T : IDamlType =>
+        public Task<ExerciseOutcome<TResult>> TryExerciseAsync<TResult>(ExerciseCommand command, SubmitterInfo submitter, string? workflowId = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
-        public Task<ExerciseOutcome<TResult>> TryExerciseAsync<TResult>(ExerciseCommand command, SubmitterInfo submitter, string? workflowId = null, CancellationToken cancellationToken = default) =>
+        public Task<SubmitAndWaitResult> SubmitAndWaitAsync(CommandsSubmission submission, TimeSpan? timeout = null, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
-        public Task<ExerciseOutcome<TResult>> TryExerciseAsync<TResult>(ExerciseCommand command, Party actAs, string? workflowId = null, CancellationToken cancellationToken = default) =>
+        public Task<ExerciseOutcome<TransactionResult>> TrySubmitAndWaitForTransactionAsync(CommandsSubmission submission, TimeSpan? timeout = null, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
-        public Task<SubmitAndWaitResult> SubmitAndWaitAsync(CommandsSubmission submission, CancellationToken cancellationToken) =>
+        public Task<ExerciseOutcome<ContractId<TTemplate>>> TryCreateAsync<TTemplate>(TTemplate payload, SubmitterInfo submitter, string? workflowId = null, TimeSpan? timeout = null, CancellationToken cancellationToken = default) where TTemplate : ITemplate =>
             throw new NotImplementedException();
 
-        public Task<ExerciseOutcome<TransactionResult>> TrySubmitAndWaitForTransactionAsync(CommandsSubmission submission, CancellationToken cancellationToken) =>
-            throw new NotImplementedException();
-
-        public Task<ExerciseOutcome<ContractId<TTemplate>>> TryCreateAsync<TTemplate>(TTemplate payload, SubmitterInfo submitter, string? workflowId = null, CancellationToken cancellationToken = default) where TTemplate : ITemplate =>
-            throw new NotImplementedException();
-
-        public Task<ExerciseOutcome<ContractId<TTemplate>>> TryCreateAsync<TTemplate>(TTemplate payload, Party actAs, string? workflowId = null, CancellationToken cancellationToken = default) where TTemplate : ITemplate =>
-            throw new NotImplementedException();
-
-        public Task<ExerciseOutcome<ContractId<TTemplate>>> TryExerciseForCreatedAsync<TTemplate>(ExerciseCommand command, SubmitterInfo submitter, string? workflowId = null, CancellationToken cancellationToken = default) where TTemplate : IDamlType =>
-            throw new NotImplementedException();
-
-        public Task<ExerciseOutcome<ContractId<TTemplate>>> TryExerciseForCreatedAsync<TTemplate>(ExerciseCommand command, Party actAs, string? workflowId = null, CancellationToken cancellationToken = default) where TTemplate : IDamlType =>
-            throw new NotImplementedException();
-
-        public Task<long> GetLedgerEndAsync(CancellationToken cancellationToken) =>
+        public Task<LedgerOffset> GetLedgerEndAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
         public void Dispose()
         {
         }
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }

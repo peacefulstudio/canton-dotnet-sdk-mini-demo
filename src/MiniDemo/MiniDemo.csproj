@@ -22,5 +22,6 @@
     <PackageReference Include="Canton.Ledger.Grpc.Client" />
     <PackageReference Include="Canton.Ledger.Kernel" />
     <PackageReference Include="Peaceful.Canton.Localnet.Testing" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
   </ItemGroup>
 </Project>
