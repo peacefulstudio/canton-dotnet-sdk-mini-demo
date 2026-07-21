@@ -185,6 +185,7 @@ The bootstrap (DAR upload + party allocation) goes over the **JSON Ledger API** 
 | **.NET SDK** | `>= 10.0.100` | builds and runs the app (`dotnet --version`) |
 | **dpm** (Daml Package Manager) | `>= 1.0.20` | `dpm codegen-cs` needs the `oci://` component syntax; `>= 1.0.20` verifies component digests on a cache hit |
 | **JDK** | `17+` | the codegen component runs a JVM helper to decode the DAR |
+| **Docker + Compose** | Docker `>= 27`, Compose `>= 2.27` | runs the Canton LocalNet stack (`make up`); budget ~16 GB RAM for it |
 | **Canton LocalNet** | running | the ledger the demo talks to — this repo does **not** start one |
 
 Install `dpm` and the pinned Daml SDK. Pin the installer to a specific release (`3.5.2` lands dpm
@@ -260,9 +261,9 @@ Targeting Canton LocalNet (AValidator1). Values default to a local LocalNet; ove
 == 1. Bootstrap ==
 Uploading DAR: /…/daml/.daml/dist/canton-mini-demo-0.1.0.dar
 DAR upload outcome: Uploaded
-issuer = issuer::1220abcd…
-alice  = alice::1220ef01…
-bob    = bob::12203456…
+issuer = issuer-d71af49f…::1220abcd…
+alice  = alice-d71af49f…::1220abcd…
+bob    = bob-d71af49f…::1220abcd…
 Granted act-as (issuer/alice/bob) to ledger user <validator-user-id>
 
 == 2. Connect gRPC SDK ==
@@ -276,7 +277,7 @@ Transferred. New Asset contract id: 00d4e5f6…
 
 == 5. Query ACS via LedgerClient ==
 Active Asset contracts visible to bob (1):
-  00d4e5f6…: name=GOLD amount=42 owner=bob::12203456…  <- owner is now bob
+  00d4e5f6…: name=GOLD amount=42.0000000000 owner=bob-d71af49f…::1220abcd…  <- owner is now bob
 
 Done — create -> transfer -> ACS query round-trip complete.
 ```
