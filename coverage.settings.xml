@@ -5,12 +5,14 @@
       <Exclude>
         <ModulePath>.*\.Tests\.dll$</ModulePath>
         <ModulePath>.*[/\\]testhost\.dll$</ModulePath>
+        <ModulePath>.*Canton\.Ledger\.Testing\.dll$</ModulePath>
       </Exclude>
     </ModulePaths>
     <Sources>
       <Exclude>
         <Source>.*[/\\]obj[/\\].*</Source>
         <Source>.*[/\\]Generated[/\\].*</Source>
+        <Source>.*[/\\]Program\.cs$</Source>
       </Exclude>
     </Sources>
     <Attributes>
@@ -19,7 +21,6 @@
         <Attribute>^System\.Diagnostics\.DebuggerNonUserCodeAttribute$</Attribute>
         <Attribute>^System\.ObsoleteAttribute$</Attribute>
         <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
-        <Attribute>^System\.Runtime\.CompilerServices\.CompilerGeneratedAttribute$</Attribute>
       </Exclude>
     </Attributes>
     <SkipAutoProps>True</SkipAutoProps>

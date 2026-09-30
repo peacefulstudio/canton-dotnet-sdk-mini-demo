@@ -20,8 +20,12 @@
     <PackageReference Include="Daml.Runtime" />
     <PackageReference Include="Daml.Ledger.Abstractions" />
     <PackageReference Include="Canton.Ledger.Grpc.Client" />
+    <PackageReference Include="Canton.Ledger.Rest.Client" />
     <PackageReference Include="Canton.Ledger.Kernel" />
+    <PackageReference Include="Canton.Ledger.Pqs.Client" />
+    <PackageReference Include="Npgsql" />
     <PackageReference Include="Peaceful.Canton.Localnet.Testing" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
   </ItemGroup>
 </Project>

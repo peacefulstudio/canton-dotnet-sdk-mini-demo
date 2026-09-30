@@ -8,7 +8,19 @@ obj/
 # IDE
 .vs/
 .idea/
+.vscode/
 *.user
+
+# Test and demo run output
+TestResults/
+log/
+canton-console.conf
+
+# Agent tooling
+.claude/
+
+# macOS
+.DS_Store
 
 # Local NuGet credential overrides
 NuGet.local.config
