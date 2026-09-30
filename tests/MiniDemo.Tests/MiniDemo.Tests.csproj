@@ -9,4 +9,9 @@
     <ProjectReference Include="..\..\src\MiniDemo\MiniDemo.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Canton.Ledger.Testing" />
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+
 </Project>

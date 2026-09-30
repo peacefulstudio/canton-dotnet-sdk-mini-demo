@@ -1,6 +1,8 @@
 // Copyright 2026 Peaceful Studio OÜ
 // SPDX-License-Identifier: Apache-2.0
 
+using Peaceful.Canton.Localnet.Testing;
+
 namespace MiniDemo;
 
 internal static class LedgerEndpoint
@@ -12,4 +14,7 @@ internal static class LedgerEndpoint
         env.TryGetValue(GrpcAddressEnv, out var configured) && !string.IsNullOrWhiteSpace(configured)
             ? configured
             : DefaultGrpcAddress;
+
+    public static string ResolveJsonApi(IReadOnlyDictionary<string, string?> env) =>
+        EndpointDiscovery.Resolve(EndpointDiscovery.ResolveProfile(env), env).JsonLedgerApi.ToString();
 }
