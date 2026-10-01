@@ -68,7 +68,7 @@ jobs:
           grep -m 1 'dpm-codegen-cs' codegen/daml.yaml
           bash scripts/codegen.sh
           cat "${DPM_HOME:-${HOME}/.dpm}/cache/components/ghcr.io/peacefulstudio/dpm-codegen-cs/.pinned-uri"
-          if ! git diff --exit-code -- src/MiniDemo.Contracts/Generated/; then
+          if [ -n "$(git status --porcelain -- src/MiniDemo.Contracts/Generated/)" ]; then
             git status --short
             git diff --stat -- src/MiniDemo.Contracts/Generated/
             echo "::error::Committed C# bindings differ from a fresh dpm codegen-cs run; run scripts/codegen.sh and commit the result"
