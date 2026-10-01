@@ -1,0 +1,166 @@
+name: LocalNet
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: localnet-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  demo:
+    name: demo (localnet, require PQS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      LOCALNET_REF: v0.8.4-1
+      LOCALNET_DIR: ${{ github.workspace }}/canton-localnet
+      DPM_INSTALLER_VERSION: '3.5.2'
+      DAML_SDK_VERSION: '3.5.2'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Checkout canton-localnet ${{ env.LOCALNET_REF }}
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: peacefulstudio/canton-localnet
+          ref: ${{ env.LOCALNET_REF }}
+          path: canton-localnet
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@3e891b0cb619bf60e2c25674b222b8940e2c1c25 # v4.1.0
+        with:
+          global-json-file: global.json
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26'
+          cache-dependency-path: canton-localnet/cli/go.sum
+
+      - name: Install dpm and Daml SDK
+        run: |
+          set -euo pipefail
+          curl -sSL https://get.digitalasset.com/install/install.sh | sh -s -- "${DPM_INSTALLER_VERSION}"
+          echo "${HOME}/.dpm/bin" >> "${GITHUB_PATH}"
+          "${HOME}/.dpm/bin/dpm" install "${DAML_SDK_VERSION}"
+
+      - name: Build the demo DAR
+        working-directory: daml
+        run: |
+          set -euo pipefail
+          dpm build
+          ls -l .daml/dist/
+
+      - name: Build the demo
+        run: make build
+
+      - name: Build canton-localnet CLI
+        working-directory: canton-localnet/cli
+        run: |
+          set -euo pipefail
+          go build -o "${LOCALNET_DIR}/canton-localnet" ./cmd/canton-localnet
+
+      - name: Enable PQS and disable the observability stack
+        working-directory: canton-localnet
+        run: |
+          set -euo pipefail
+          cat > canton-localnet.yaml <<'YAML'
+          schemaVersion: preview-1
+          modules:
+            obs: false
+            pqs: true
+          YAML
+
+      - name: Resolve the PQS connection string from LocalNet fixtures
+        run: |
+          set -euo pipefail
+          common_env="${LOCALNET_DIR}/compose/modules/localnet/env/common.env"
+          raw="$(grep -m 1 -oP '^DB_PASSWORD=\K\S+' "${common_env}" || true)"
+          [[ -n "${raw}" ]] || { echo "::error::DB_PASSWORD not found in ${common_env}" >&2; exit 1; }
+          raw="${raw%\"}"
+          raw="${raw#\"}"
+          if [[ "${raw}" == '${DB_PASSWORD:-'*'}' ]]; then
+            file_default="${raw#\$\{DB_PASSWORD:-}"
+            file_default="${file_default%\}}"
+            db_password="${DB_PASSWORD:-${file_default}}"
+          else
+            db_password="${raw}"
+          fi
+          echo "::add-mask::${db_password}"
+          pqs_conn="Host=localhost;Port=5432;Database=pqs-a-validator-1;Username=cnadmin;Password=${db_password}"
+          echo "::add-mask::${pqs_conn}"
+          echo "CANTON_LOCALNET_A_VALIDATOR_1_PQS_CONNECTION_STRING=${pqs_conn}" >> "${GITHUB_ENV}"
+
+      - name: Tear down any LocalNet already present, volumes included
+        working-directory: canton-localnet
+        run: |
+          set -euo pipefail
+          "${LOCALNET_DIR}/canton-localnet" down --volumes
+
+      - name: Bring up a fresh LocalNet with PQS (one retry on the splice bootstrap race)
+        working-directory: canton-localnet
+        run: |
+          set -euo pipefail
+          if ! "${LOCALNET_DIR}/canton-localnet" up; then
+            echo "::warning::canton-localnet up failed on first attempt; tearing down with volumes and retrying once"
+            "${LOCALNET_DIR}/canton-localnet" down --volumes || echo "::warning::pre-retry teardown failed; second up may fail with leaked state"
+            sleep 30
+            "${LOCALNET_DIR}/canton-localnet" up
+          fi
+
+      - name: Wait for ledger readiness
+        working-directory: canton-localnet
+        run: |
+          set -euo pipefail
+          "${LOCALNET_DIR}/canton-localnet" wait-ready --timeout 15m --interval 5s
+
+      - name: Wait for PQS to subscribe before the demo uploads its DAR
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 150); do
+            if docker logs pqs-a-validator-1 2>&1 | grep -q "Contract filter inclusive"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::PQS on a-validator-1 did not subscribe within 300s" >&2
+          exit 1
+
+      - name: Run the demo with PQS required
+        run: |
+          set -uo pipefail
+          REQUIRE_PQS=1 make run 2>&1 | tee "${RUNNER_TEMP}/demo.log"
+          exit_code="${PIPESTATUS[0]}"
+          {
+            echo "### Demo exit code \`${exit_code}\`"
+            echo ""
+            grep PQS "${RUNNER_TEMP}/demo.log" | sed 's/^/    /' || true
+          } >> "${GITHUB_STEP_SUMMARY}"
+          exit "${exit_code}"
+
+      - name: Dump LocalNet container logs
+        if: failure()
+        run: |
+          set -uo pipefail
+          docker ps -a
+          for container in canton splice pqs-a-validator-1; do
+            echo "::group::${container} (last 400 lines)"
+            docker logs --timestamps --tail 400 "${container}" 2>&1 || true
+            echo "::endgroup::"
+          done
+
+      - name: Tear down LocalNet, volumes included
+        if: always()
+        working-directory: canton-localnet
+        run: |
+          "${LOCALNET_DIR}/canton-localnet" down --volumes || echo "::warning::teardown failed"
