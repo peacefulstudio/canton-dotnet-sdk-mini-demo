@@ -8,7 +8,7 @@
 # daml.yaml's non-name fields, and over every *.dar under daml/dars/ (the
 # data-dependencies). scripts/codegen.sh calls this to keep the committed
 # name in sync with the Daml source and the vendored DARs on every
-# regeneration, and .github/workflows/codegen-drift.yaml fails when the two
+# regeneration, and CI fails when the two
 # have drifted apart.
 
 set -euo pipefail
