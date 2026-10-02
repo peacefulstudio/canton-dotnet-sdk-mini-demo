@@ -54,12 +54,9 @@ jobs:
               *"release not found"*) ;;
               *) lookup_failed "gh release view ${tag} failed: ${view_error}"; return 1 ;;
             esac
-            for status in queued in_progress; do
-              runs="$(gh run list --workflow release.yaml --branch "${tag}" --status "${status}" --json databaseId --jq 'length' 2>&1)" \
-                || { lookup_failed "gh run list for ${tag} (${status}) failed: ${runs}"; return 1; }
-              [ "${runs}" = "0" ] || return 0
-            done
-            return 1
+            runs="$(gh run list --workflow release.yaml --branch "${tag}" --limit 1000 --json status --jq '[.[] | select(.status != "completed")] | length' 2>&1)" \
+              || { lookup_failed "gh run list for ${tag} failed: ${runs}"; return 1; }
+            [ "${runs}" != "0" ]
           }
 
           main_tip="$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq '.object.sha')"
