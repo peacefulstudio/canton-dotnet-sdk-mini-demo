@@ -4,6 +4,7 @@
 using Canton.Ledger.Abstractions;
 using Daml.Ledger.Abstractions;
 using Daml.Ledger.Abstractions.Extensions;
+using Daml.Runtime;
 using Daml.Runtime.Commands;
 using Daml.Runtime.Contracts;
 using Daml.Runtime.Data;
@@ -140,6 +141,7 @@ internal sealed class MiniDemoRunner
         var writer = IssuerAndAliceTransport;
         var acceptor = BobTransport;
 
+        var windowStart = await writer.Client.GetLedgerEndAsync(cancellationToken: ct);
         var proposal = ProposalFor(parties, instrumentKey, issuance.AliceHoldingCid, DateTimeOffset.UtcNow);
         var instructionCid = await ProposeAsync(writer.Client, issuance.FactoryCid, proposal, writer.Name, ct);
 
@@ -154,6 +156,9 @@ internal sealed class MiniDemoRunner
             $"({disclosed.CreatedEventBlob.Length} bytes) and hands it to bob off-ledger");
 
         var acceptedCid = await AcceptWithDisclosureAsync(acceptor.Client, instructionCid, disclosed, parties.Bob, acceptor.Name, ct);
+        var windowEnd = await writer.Client.GetLedgerEndAsync(cancellationToken: ct);
+        await ObserveTransferOnEveryTransportAsync(
+            _transports, parties.Bob, acceptedCid, windowStart, windowEnd, UpdateStreamObserver.DefaultTimeout, Console.Out, ct);
         var mintedCid = await MintByKeyAsync(
             writer.Client, instrumentKey, parties.Issuer, parties.Bob, "bob", BobMintAmount, writer.Name, ct);
         await VerifyTotalSupplyAsync(writer.Client, instrumentKey, parties.Issuer, writer.Name, ct);
@@ -163,6 +168,21 @@ internal sealed class MiniDemoRunner
             new WrittenAsset(acceptor, acceptedCid, instrumentKey),
             new WrittenAsset(writer, mintedCid, instrumentKey),
         ];
+    }
+
+    internal static async Task ObserveTransferOnEveryTransportAsync(
+        IReadOnlyList<LedgerTransport> transports,
+        Party observer,
+        ContractId<DemoAsset> acceptedCid,
+        LedgerOffset windowStart,
+        LedgerOffset windowEnd,
+        TimeSpan timeout,
+        TextWriter output,
+        CancellationToken ct)
+    {
+        foreach (var transport in transports)
+            await UpdateStreamObserver.ObserveCreatedAsync(
+                transport.Client, transport.Name, observer, acceptedCid, windowStart, windowEnd, timeout, output, ct);
     }
 
     internal static async Task<ContractId<Instrument>> CreateInstrumentAsync(

@@ -37,7 +37,7 @@ if [[ -d "${COMPONENT_CACHE}" && "$(cat "${COMPONENT_MARKER}" 2>/dev/null)" != "
   rm -rf "${COMPONENT_CACHE}"
 fi
 
-PACKAGE_NAME="$("${REPO_ROOT}/scripts/compute-package-name.sh")"
+PACKAGE_NAME="$(bash "${REPO_ROOT}/scripts/compute-package-name.sh")"
 sed -i.bak "s/^name: .*/name: ${PACKAGE_NAME}/" "${DAML_DIR}/daml.yaml"
 rm -f "${DAML_DIR}/daml.yaml.bak"
 echo "[codegen] daml.yaml name -> ${PACKAGE_NAME}"

@@ -22,7 +22,7 @@ them portable:
 |---|------------|--------------|
 | 1 | **Codegen** — turn a Daml contract into idiomatic, strongly-typed C# | `dpm build` + `dpm codegen-cs` → `src/MiniDemo.Contracts/Generated/` |
 | 2 | **Command submission** — create contracts, exercise choices by contract key and through a Daml interface, and attach a disclosed contract | generated `TryCreateAsync(...)`, `MintByKeyCommand(...)`, `TryTransferFactory_TransferAsync(...)` and `TryTransferInstruction_AcceptAsync(...)` on an `ILedgerWriter` |
-| 3 | **ACS query** — read the active contract set back, with each contract's key, and through a Daml interface | typed `SubscribeActiveAsync<Asset>` plus `QueryActiveAsync<IHolding, HoldingView>` on `ICantonLedgerClient` |
+| 3 | **ACS query and update stream** — read the active contract set back, with each contract's key and through a Daml interface, and observe the transfer's transaction on the offset-bounded update stream | typed `SubscribeActiveAsync<Asset>`, `QueryActiveAsync<IHolding, HoldingView>` and `SubscribeAsync<Asset>` on `ICantonLedgerClient` |
 | 4 | **Transport independence** — the same bindings and the same call sites over **gRPC** and **JSON/REST** | `AddLedgerClient` or `AddRestLedgerClient`; alice proposes over gRPC, bob accepts over REST, then a cross-transport read-back of ids, keys and views |
 
 The scenario is a Splice **Token Standard V2 two-step transfer**. An `issuer` creates the `GOLD`
@@ -30,7 +30,8 @@ The scenario is a Splice **Token Standard V2 two-step transfer**. An `issuer` cr
 transfer of all 42 to `bob` through the token standard's `TransferFactory` interface: her holding is
 archived and re-created **locked** to the issuer until the transfer's deadline, next to a pending
 `TransferInstruction`. Bob accepts over the other transport, attaching the locked holding as a
-**disclosed contract**, and receives an unlocked 42 GOLD. The issuer then mints 10 GOLD to bob and
+**disclosed contract**, and receives an unlocked 42 GOLD; both transports then observe that transaction
+on the ledger's update stream, bounded by offsets and a timeout. The issuer then mints 10 GOLD to bob and
 checks, with a `TotalSupply` choice that sums every holding under the instrument's key, that the
 supply is exactly 52. A closing section has each transport read back the holdings the *other* one
 wrote.
@@ -150,7 +151,7 @@ flowchart LR
   into `daml/daml.yaml` on every `scripts/codegen.sh` run, so editing the Daml source, editing a
   vendored DAR at the same path, or regenerating always produces a package with a fresh identity
   instead of colliding with a previously uploaded DAR of the same name and version;
-  `codegen-drift.yaml` fails the build if the committed name falls out of sync with the source.
+  re-running `make codegen` on an unchanged source leaves the committed name unchanged.
 - **`dpm codegen-cs --dar <dar> --out Generated/ --namespace MiniDemo.Asset`** (uses `codegen/daml.yaml`,
   which pins the OCI component by tag **and** digest) runs the JVM helper to decode the DAR into a
   canonical AST, then a Roslyn-based emitter writes idiomatic C# records. Output is written to a temp
@@ -194,6 +195,7 @@ sequenceDiagram
     Net-->>App: alice holds 42 GOLD
 
     Note over App,Net: 3 · Token Standard V2 two-step transfer
+    App->>G: GetLedgerEndAsync — windowStart, the offset before the proposal
     App->>G: factoryCid.TryTransferFactory_TransferAsync(alice → bob, 42 GOLD) as alice
     Net-->>App: TransferInstructionResult_Pending(instruction cid)
     App->>G: QueryActiveAsync<IHolding, HoldingView>(alice)
@@ -202,6 +204,11 @@ sequenceDiagram
     App->>G: issuer reads the locked holding's typed Disclosure from its ACS query
     App->>R: TryTransferInstruction_AcceptAsync as bob, configure: WithDisclosedContracts(disclosure)
     Net-->>App: TransferInstructionResult_Completed — bob holds 42 GOLD
+    App->>G: GetLedgerEndAsync — windowEnd, the offset after the accept
+    App->>G: SubscribeAsync<Asset>(bob, windowStart, windowEnd) with a 30 s deadline
+    G-->>App: Created{bob's accepted holding} inside (windowStart, windowEnd] ✓
+    App->>R: SubscribeAsync<Asset>(bob, windowStart, windowEnd) with a 30 s deadline
+    R-->>App: the same Created event at the same offset ✓
     App->>G: TrySubmitSingleAsync(MintByKeyCommand((issuer, "GOLD"), Mint{bob, 10}))
     App->>G: TrySubmitSingleAsync(TotalSupplyByKeyCommand((issuer, "GOLD")))
     Net-->>App: 52 ✓
@@ -223,7 +230,7 @@ sequenceDiagram
     Net-->>App: found once scribe projects it, or a timeout/unavailable hint
     App->>Net: IPqsClient.QueryAsync(Filter.Field(Owner, bob), PqsPage) — SQL, no participant round trip
     Net-->>App: "PQS projected N of M Asset contract(s) owned by bob"
-    App->>Net: IPqsClient.QueryAsync<IHolding, HoldingView>()
+    App->>Net: NpgsqlHoldingsQuery — SELECT … FROM active(IHolding) WHERE contract_id = ANY(bob's holdings)
     Net-->>App: "PQS projected N of M of them as IHolding views"
 ```
 
@@ -257,6 +264,16 @@ contracts with `includeDisclosure: true`, reads the typed `Disclosure` off the l
 to bob in memory. Bob attaches it through the generated helper's `configure` callback
 (`submission => submission.WithDisclosedContracts(disclosure)`) and submits over REST.
 The choice returns `TransferInstructionResult_Completed` with bob's new, unlocked holding.
+
+**Observing the transfer.** Reading state back is not the same as watching the ledger emit the
+update. Before the proposal the runner records the ledger end with `GetLedgerEndAsync`, and again
+right after bob's accept commits. It then opens `SubscribeAsync<Asset>` as bob on **each** transport
+over the half-open window `(windowStart, windowEnd]` — lower bound exclusive, upper bound inclusive —
+and requires the `Created` event for bob's accepted holding to arrive, at an offset inside that
+window. The stream is an `IAsyncEnumerable<ContractStreamEvent<Asset>>`; because `toOffset` is set it
+completes on its own, and a 30-second deadline cancels it should the participant stall. A stream that
+completes without the event, delivers an event outside the window, carries a `StreamError`, or misses
+the deadline throws, and the demo exits `65`.
 
 **Total supply by key.** Contract keys are **not unique** at Daml-LF 2.3: every `Asset` of the GOLD
 instrument carries the same key `(issuer, "GOLD")`, and the ledger accepts them all. The
@@ -382,10 +399,16 @@ first (or at least `dpm build`, or `MINI_DEMO_DAR` pointing at an existing `.dar
 whenever you change `Asset.daml`.
 
 <details>
-<summary><b>Expected output</b> (party IDs and contract IDs differ per run and are shortened with <code>…</code> here; the amounts do not)</summary>
+<summary><b>Expected output</b> (party IDs, contract IDs and ledger offsets differ per run and are shortened with <code>…</code> here; the amounts do not)</summary>
 
 ```text
+Targeting Canton LocalNet (AValidator1). Values default to a local LocalNet; override any via CANTON_LOCALNET_* env vars:
+  CANTON_LOCALNET_JSON_API_URL   http://localhost:11975/
+  CANTON_LOCALNET_LEDGER_GRPC    http://localhost:11901
+  CANTON_LOCALNET_TOKEN_URL      http://localhost:8082/realms/AValidator1/protocol/openid-connect/token
+  CANTON_LOCALNET_CLIENT_ID      a-validator-1-validator
 == 1. Bootstrap ==
+Uploading DAR: …/daml/.daml/dist/canton-mini-demo-hbde402d4f83a-0.1.0.dar
 DAR upload outcome: Uploaded
 issuer = issuer-89189719140d::1220…
 alice  = alice-89189719140d::1220…
@@ -402,13 +425,15 @@ Granted act-as (issuer/alice/bob) to ledger user … (leased — revoked when th
 
 == 3. Token Standard V2 two-step transfer — alice -> bob ==
   propose  alice -> bob, 42 GOLD via TransferFactory_Transfer over gRPC -> pending 00…
-             (requestedAt 2026-09-30 08:30:44Z <= now < executeBefore 2026-09-30 09:31:44Z)
-  acs      alice: 42 GOLD 🔒  locked by issuer-89189719140d::1220… until 2026-09-30 09:31:44Z (transfer to bob-89189719140d::1220…)
+             (requestedAt 2026-10-01 10:03:20Z <= now < executeBefore 2026-10-01 11:04:20Z)
+  acs      alice: 42 GOLD 🔒  locked by issuer-89189719140d::1220… until 2026-10-01 11:04:20Z (transfer to bob-89189719140d::1220…)
              (00…, read as an IHolding view over gRPC)
-  pqs      alice: 42 GOLD 🔒  locked by issuer-89189719140d::1220… until 2026-09-30 09:31:44Z (transfer to bob-89189719140d::1220…)
+  pqs      alice: 42 GOLD 🔒  locked by issuer-89189719140d::1220… until 2026-10-01 11:04:20Z (transfer to bob-89189719140d::1220…)
              (the same pending holding, read from the Postgres read model)
   disclose issuer reads the locked holding's typed Disclosure from its gRPC ACS query (1051 bytes) and hands it to bob off-ledger
   accept   bob accepts over REST, the locked holding attached as a disclosed contract -> completed, bob holds 00…
+  observe  gRPC update stream (2777, 2783] delivered Created 00… to bob at offset 2781 (1 event(s) read)
+  observe  REST update stream (2777, 2783] delivered Created 00… to bob at offset 2781 (1 event(s) read)
   mint     10 GOLD to bob, by key (issuer-89189719140d::1220…, GOLD) over gRPC -> 00…
   supply   TotalSupply by key (issuer-89189719140d::1220…, GOLD) over gRPC = 52 (42 accepted by bob + 10 minted to bob)
 
@@ -419,15 +444,19 @@ Granted act-as (issuer/alice/bob) to ledger user … (leased — revoked when th
   REST reads back the Asset written over gRPC (00…): same key (issuer-89189719140d::1220…, GOLD), same IHolding view 10 GOLD
 
 == 5. Failure lane — expected rejections as typed values ==
+  gRPC submit create Asset(issuer, issuer, DEDUP-gRPC-…) as command mini-demo-dedup-gRPC-… (deduplicated for 5 min)
   gRPC committed
+  gRPC submit the same command id again (rejection read from the DamlError outcome)
   gRPC rejected as expected: DUPLICATE_COMMAND (category InvalidGivenCurrentSystemStateResourceExists)
+  REST submit create Asset(issuer, issuer, DEDUP-REST-…) as command mini-demo-dedup-REST-… (deduplicated for 5 min)
   REST committed
+  REST submit the same command id again (rejection read from the LedgerOperationException)
   REST rejected as expected: DUPLICATE_COMMAND (category InvalidGivenCurrentSystemStateResourceExists)
 
 == 6. PQS read model ==
   PQS projected 2 of 2 Asset contract(s) owned by bob (WHERE owner = ? and LIMIT pushed into Postgres — the participant is never queried):
-             00… name=GOLD amount=10.0000000000
              00… name=GOLD amount=42.0000000000
+             00… name=GOLD amount=10.0000000000
   PQS projected 2 of 2 of them as IHolding views (the interface view, decoded without naming the Asset template):
              00… owner=bob-89189719140d::1220…, admin=issuer-89189719140d::1220…, instrument=GOLD, amount=42.0000000000
              00… owner=bob-89189719140d::1220…, admin=issuer-89189719140d::1220…, instrument=GOLD, amount=10.0000000000
@@ -441,7 +470,7 @@ prints `Canton LocalNet is not reachable (…)` with a hint and exits `1` — it
 Only the identifiers and timestamps move between runs. Every run allocates fresh parties — note the
 per-run suffix on `issuer-…` / `alice-…` / `bob-…` — so the contract ids and those suffixes differ
 each time, but the amounts are fixed: alice's pending holding is always **42 GOLD 🔒**, the total
-supply is always **52**, and section 4 always prints **4** lines — two readers × two of bob's
+supply is always **52**, section 3 always prints **2** `observe` lines (one per transport, with the same offset), and section 4 always prints **4** lines — two readers × two of bob's
 holdings, each with a matching key and view. A different amount or count is a real divergence, not
 run-to-run noise. The `requestedAt` line sits one minute before the proposal and `executeBefore` one
 hour after it; the minute absorbs clock skew between your machine and the participant.
@@ -455,7 +484,7 @@ flag, an unavailable or a timed-out-with-nothing outcome exits `69` right away; 
 polling until it either reaches `N of N` on both queries or exhausts the same 120s budget, and in the
 latter case also exits `69` instead of `0`.
 
-Reproducing this output needs LocalNet [`v0.8.3-2`](https://github.com/peacefulstudio/canton-localnet)
+Reproducing this output needs LocalNet [`v0.8.4-1`](https://github.com/peacefulstudio/canton-localnet)
 or later — earlier releases grant PQS read access to the validator party only, so PQS times out against
 this demo's fresh parties instead of projecting anything.
 </details>
@@ -580,10 +609,10 @@ recent archive under `daml/.daml/dist/`). Each console section maps to an SDK co
 |-----------------|-------------------|-----------------|
 | `1. Bootstrap` | Upload the DAR and allocate `issuer` / `alice` / `bob`, grant act-as rights (permission to submit commands as those parties) as a lease revoked when the run completes or fails | `LocalnetFixture.UploadDarAsync`, `AllocatePartyAsync`, `GrantUserRightsLeaseAsync` |
 | `2. Issuance` | Create the `GOLD` instrument over gRPC and the `SILVER` one over REST (the two ways to read a create), the `AssetTransferFactory` with alice and bob as observers, and mint 42 GOLD to alice **by key** | generated `TryCreateAsync`; `Instrument.MintByKeyCommand` submitted with `TrySubmitSingleAsync`; `ExerciseOutcome<T>` pattern match vs `OneOrThrowAsync` |
-| `3. Token Standard V2 two-step transfer` | Alice proposes over gRPC through the `ITransferFactory` interface; the runner reads her locked holding from the ACS and from PQS; the issuer reads its typed `Disclosure`; bob accepts over REST with that holding **disclosed**; the issuer mints 10 GOLD to bob and checks `TotalSupply` by key is `52` | generated `TryTransferFactory_TransferAsync`; `QueryActiveAsync<IHolding, HoldingView>`; `TryTransferInstruction_AcceptAsync(configure: …WithDisclosedContracts)`; `QueryActiveAsync(includeDisclosure: true)`; `Instrument.TotalSupplyByKeyCommand` + `ExerciseResult<decimal>` |
+| `3. Token Standard V2 two-step transfer` | Alice proposes over gRPC through the `ITransferFactory` interface; the runner reads her locked holding from the ACS and from PQS; the issuer reads its typed `Disclosure`; bob accepts over REST with that holding **disclosed**; both transports observe bob's `Created` event on the offset-bounded update stream; the issuer mints 10 GOLD to bob and checks `TotalSupply` by key is `52` | generated `TryTransferFactory_TransferAsync`; `QueryActiveAsync<IHolding, HoldingView>`; `TryTransferInstruction_AcceptAsync(configure: …WithDisclosedContracts)`; `QueryActiveAsync(includeDisclosure: true)`; `GetLedgerEndAsync`; `SubscribeAsync<Asset>(submitter, fromOffset, toOffset)`; `UpdateStreamObserver.ObserveCreatedAsync`; `Instrument.TotalSupplyByKeyCommand` + `ExerciseResult<decimal>` |
 | `4. Cross-transport verification` | Each transport re-reads bob's keyed ACS and `IHolding` views and must see both of his holdings, under the same key and with the same view | `MiniDemoRunner.VerifyEveryTransportSeesEveryAssetAsync`, which throws naming both transports on any divergence (exit `65`) |
 | `5. Failure lane` | Submit one `create` twice under one command id inside a 5-minute deduplication window; the second submission must come back as `DUPLICATE_COMMAND`, read as a typed `DamlError` on gRPC and as a `LedgerOperationException` on REST | `CommandsSubmission.WithDeduplicationPeriod`, `DeduplicationPeriod.Duration`, `TrySubmitAndWaitForTransactionAsync`; `FailureLane.RunAsync` (exit `65` if the ledger accepts the duplicate) |
-| `6. PQS read model` | Poll the PQS read model for bob's accepted holding, then run a filtered/paged SQL query and an `IHolding` interface query against it | `AddPqsClient(options)`, resolved as `IPqsClient`; `PqsLane.RunAsync` |
+| `6. PQS read model` | Poll the PQS read model for bob's accepted holding, then run a filtered/paged SQL query and an `IHolding` interface query against it | `AddPqsClient(options)`, resolved as `IPqsClient`; `PqsLane.RunAsync`; `NpgsqlHoldingsQuery` |
 
 The client comes from dependency injection, and that is where the transport is decided. `Program.cs`
 builds one container per transport. Register the token provider **before** the client — both
@@ -645,7 +674,7 @@ and reaching it over HTTP is the registration call:
 `HttpAddress` is the **JSON Ledger API** base URL — not `GrpcAddress`, and not the gRPC port.
 `UserId` is optional: left unset, the participant derives it from the token; the demo passes
 `fixture.ValidatorUserId`, the same ledger user it granted act-as rights to during bootstrap. Both
-transport packages ship on the same `0.6.0-preview.2` line — preview software, pinned centrally (see
+transport packages ship on the same `0.6.0-preview.3` line — preview software, pinned centrally (see
 [Pinned versions](#pinned-versions)).
 
 Either call registers one adapter resolvable as the same five service types — `ICantonLedgerClient`,
@@ -769,6 +798,46 @@ The acceptance goes through the generated `TryTransferInstruction_AcceptAsync` l
 locked holding with `WithDisclosedContracts`. The typed `TransferInstructionResult` comes straight back,
 unwrapped over REST with `OneOrThrowAsync`.
 
+Observing the transfer takes the two ledger-end offsets the runner recorded around the proposal and
+the accept, and drains the typed update stream on each transport (the logic is the same on both; only
+the registered client differs):
+
+```csharp
+internal static async Task ObserveCreatedAsync(
+    Func<CancellationToken, IAsyncEnumerable<ContractStreamEvent<Asset>>> openStream,
+    string transportName, ContractId<Asset> expected, LedgerOffset after, LedgerOffset through,
+    TimeSpan timeout, TextWriter output, CancellationToken ct)
+{
+    using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+    deadline.CancelAfter(timeout);
+    try
+    {
+        await foreach (var streamEvent in openStream(deadline.Token).WithCancellation(deadline.Token))
+        {
+            switch (streamEvent)
+            {
+                case ContractStreamEvent<Asset>.StreamError error:
+                    throw new DemoVerificationException($"the {transportName} stream ended with a fault ({error.Message})");
+                case ContractStreamEvent<Asset>.Created created when created.ContractId == expected:
+                    return;
+            }
+        }
+    }
+    catch (OperationCanceledException) when (deadline.IsCancellationRequested && !ct.IsCancellationRequested)
+    {
+        throw new DemoVerificationException($"the {transportName} stream delivered no Created event within {timeout}");
+    }
+
+    throw new DemoVerificationException($"the {transportName} stream completed without a Created {expected.Value}");
+}
+```
+
+The runner opens the stream with
+`ledgerClient.SubscribeAsync<Asset>(new SubmitterInfo(bob), windowStart, windowEnd, deadline.Token)`.
+`windowStart` and `windowEnd` come from `GetLedgerEndAsync`. A cancellation the caller asked for
+still propagates as an `OperationCanceledException` (exit `130`); only the demo's own deadline becomes
+a verification failure.
+
 The mint and the total supply go **by key**: `Instrument.MintByKeyCommand((issuer, name), …)` and
 `Instrument.TotalSupplyByKeyCommand((issuer, name), …)` build an `ExerciseByKeyCommand` that
 `TrySubmitSingleAsync` submits. That path is untyped: it returns an
@@ -854,13 +923,13 @@ via the same `ExceptionChain.Flatten` helper `LocalnetPreflight` uses) and a con
 `SocketException`, both meaning "PQS isn't running" rather than "PQS is behind". Once the probe
 contract is found, it runs one `IPqsClient.QueryAsync<Asset>(Filter.Field(Owner, bob), PqsPage(...))`
 and reports how many of bob's holdings PQS has projected, then one
-`IPqsClient.QueryAsync<IHolding, HoldingView>()` and reports how many of them it projected as
-`IHolding` views. None of this can fail the run by default: `MiniDemoRunner.RunPqsLaneAsync` wraps
+`NpgsqlHoldingsQuery` (`SELECT … FROM active(<IHolding type id>) WHERE contract_id = ANY(…)` over Npgsql,
+restricted to bob's holding ids) and reports how many of them it projected as `IHolding` views. None of this can fail the run by default: `MiniDemoRunner.RunPqsLaneAsync` wraps
 the whole lane in a catch-all (everything except `OperationCanceledException`, so Ctrl+C still exits
 130) that reports the failure and moves on — so a PQS error `PqsAvailability` doesn't recognize can't
 reach `DemoExitCode` unless `--require-pqs` is set. With that flag, an unavailable/timeout/short
 outcome throws `PqsRequirementNotMetException` — a partial projection first keeps polling
-`QueryAsync<Asset>` / `QueryAsync<IHolding, HoldingView>` until it is complete or the same 120s budget
+`QueryAsync<Asset>` / `NpgsqlHoldingsQuery` until it is complete or the same 120s budget
 runs out — and `DemoExitCode.ForRunAsync` maps that exception to exit `69`. See
 [Troubleshooting](#troubleshooting) for what each hint means.
 
@@ -1098,6 +1167,7 @@ src/
   MiniDemo/                       # the console CLI
     Program.cs                    #   entry point: read env → print banner → MiniDemoRunner
     MiniDemoRunner.cs             #   bootstrap → issuance → two-step transfer → cross-transport check
+    UpdateStreamObserver.cs       #   offset-bounded, deadline-guarded SubscribeAsync<Asset> read of the transfer's Created event
     LedgerTransport.cs            #   a transport: name + endpoint + the resolved ICantonLedgerClient + its result style
     ResultStyle.cs                #   pattern-matched outcome (gRPC lane) vs OneOrThrowAsync (REST lane)
     FailureLane.cs                #   expected rejection: a duplicate command id inside its deduplication window
@@ -1108,6 +1178,15 @@ src/
     LocalnetPreflight.cs          #   startup endpoint banner + "unreachable" socket-error classifier
     LedgerEndpoint.cs             #   resolve the gRPC (env, default :11901) and JSON Ledger API addresses
     DarLocator.cs                 #   locate the built .dar (MINI_DEMO_DAR or newest build output)
+    DemoExitCode.cs               #   maps run failures to exit codes 0 / 1 / 65 / 69 / 75 / 130
+    DemoVerificationException.cs  #   the demo's own failed assertion (exit 65)
+    PqsLane.cs                    #   section 6: bounded wait for PQS to project, then asset and IHolding reports
+    NpgsqlHoldingsQuery.cs        #   IHolding views from PQS's active() SQL function, filtered to given contract ids
+    PqsAvailability.cs            #   classifies "no PQS database" (SqlState 3D000) as unavailable
+    PqsConnectionString.cs        #   PQS connection string (env var, default local a-validator-1 database)
+    PqsRequirementNotMetException.cs  # --require-pqs not satisfied (exit 69)
+    ExceptionChain.cs             #   shared exception-chain walk
+    AmountFormat.cs               #   amount display for console output
 tests/
   MiniDemo.Tests/                 # xUnit v3 unit tests: two-step transfer, AssetAcsQuery, cross-transport check, PQS lane, …
 MiniDemo.slnx
@@ -1129,19 +1208,20 @@ component for `dpm codegen-cs`.
 | Daml SDK (`dpm install`) | `3.5.2` |
 | Daml-LF target (`--target`) | `2.3` |
 | `dpm` launcher | `>= 1.0.20` (pin the installer to `3.5.2`, which lands `1.0.21`) |
-| `dpm-codegen-cs` OCI component | `0.6.0-preview.2` (pinned by digest) |
-| `Daml.Runtime` | `0.6.0-preview.2` |
-| `Daml.Ledger.Abstractions` | `0.6.0-preview.2` |
-| `Canton.Ledger.Grpc.Client` | `0.6.0-preview.2` |
-| `Canton.Ledger.Rest.Client` | `0.6.0-preview.2` |
-| `Canton.Ledger.Kernel` | `0.6.0-preview.2` |
-| `Canton.Ledger.Pqs.Client` | `0.6.0-preview.2` |
+| `dpm-codegen-cs` OCI component | `0.6.0-preview.3` (pinned by digest) |
+| `Daml.Runtime` | `0.6.0-preview.3` |
+| `Daml.Ledger.Abstractions` | `0.6.0-preview.3` |
+| `Canton.Ledger.Grpc.Client` | `0.6.0-preview.3` |
+| `Canton.Ledger.Rest.Client` | `0.6.0-preview.3` |
+| `Canton.Ledger.Kernel` | `0.6.0-preview.3` |
+| `Canton.Ledger.Pqs.Client` | `0.6.0-preview.3` |
 | `Npgsql` | `10.0.3` |
-| `Splice.Api.Token.Holding.V2` | `1.0.0.14-preview.2` |
-| `Splice.Api.Token.Transfer.Instruction.V2` | `1.0.0.14-preview.2` |
-| `Canton.Ledger.Testing` | `0.6.0-preview.2` (test projects only) |
-| `Peaceful.Canton.Localnet.Testing` | `0.8.3.2` |
+| `Splice.Api.Token.Holding.V2` | `1.0.0.15-preview.3` |
+| `Splice.Api.Token.Transfer.Instruction.V2` | `1.0.0.15-preview.3` |
+| `Canton.Ledger.Testing` | `0.6.0-preview.3` (test projects only) |
+| `Peaceful.Canton.Localnet.Testing` | `0.8.4.1` |
 | `Microsoft.Extensions.DependencyInjection` | `10.0.12` |
+| `Microsoft.Extensions.Logging.Console` | `10.0.12` |
 | .NET SDK | `10.0` |
 
 All versions are centrally managed (Central Package Management) in `Directory.Packages.props`, and
@@ -1151,17 +1231,31 @@ in `tests/Directory.Packages.props` for packages only the test projects referenc
 
 ## How the repo stays honest
 
-Two GitHub Actions workflows guard the two stages so the docs above never drift from reality:
+Five GitHub Actions workflows run on GitHub-hosted runners, so what this README claims is re-proven
+by CI rather than taken on trust, and every release is cut from a green run:
 
-- **`ci.yaml`** — builds and tests the solution on every push/PR to `dev`, delegating to the shared
-  `peacefulstudio/github-actions` reusable C# CI. It runs a **two-OS matrix — Linux (`self-hosted`,
-  with code coverage) and Windows (`windows-latest`)** — so the solution is proven cross-platform on
-  every change.
-- **`codegen-drift.yaml`** — installs `dpm` + the Daml SDK, re-runs `scripts/codegen.sh`, rebuilds
-  `MiniDemo.Contracts`, and **fails if the committed `Generated/` output differs** from a fresh
-  codegen run. If you change `Asset.daml` and forget to regenerate, CI catches it.
+- **[`ci.yaml`](.github/workflows/ci.yaml)** — builds and tests the solution on every push to `main`
+  and every pull request, delegating to the shared `peacefulstudio/github-actions` reusable C# CI. It
+  runs a **two-OS matrix — Linux (`ubuntu-latest`, with code coverage) and Windows
+  (`windows-latest`)** — so the solution is proven cross-platform on every change.
+- **[`public-gate.yaml`](.github/workflows/public-gate.yaml)** — on every pull request, on
+  `ubuntu-latest`, runs a leak check and a no-AI-workflows audit over the tree, then restores, builds
+  (Release) and runs the unit tests against nuget.org alone.
+- **[`localnet.yaml`](.github/workflows/localnet.yaml)** — runs the real demo end to end on
+  `ubuntu-latest`, on demand (`workflow_dispatch`) and on every push to `main`. It starts
+  `peacefulstudio/canton-localnet` v0.8.4-1 with PQS, runs `REQUIRE_PQS=1 make run`, and tears
+  LocalNet down (`down --volumes`) before and after. Its runs are on the
+  [LocalNet workflow page](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/localnet.yaml).
+- **[`auto-tag-release.yaml`](.github/workflows/auto-tag-release.yaml)** — after `CI` and `LocalNet`
+  are both green on the tip of `main`, tags `v<Version>` (the version in
+  [`Directory.Build.props`](Directory.Build.props)) once and starts the release. An open pull request
+  labelled `hold-release` pauses it.
+- **[`release.yaml`](.github/workflows/release.yaml)** — drafts a prerelease for the tag and publishes
+  it with the matching [`CHANGELOG.md`](CHANGELOG.md) section as its notes.
 
-Dependency bumps are batched weekly by Dependabot and auto-merged for patch/minor updates.
+The generated C# under `src/MiniDemo.Contracts/Generated/` is committed. To check it against the Daml
+source yourself, run `make codegen` (needs `dpm` and a JDK, see [Prerequisites](#prerequisites)) and
+confirm `git status` shows no change under that folder.
 
 ---
 
@@ -1190,14 +1284,14 @@ This demo consumes packages from the rest of the Canton .NET SDK. If you want th
 | `5. Failure lane` fails with `Failure lane check failed …`, exit `65` | The ledger did not reject the resubmitted command id with `DUPLICATE_COMMAND` — it accepted it, or rejected it with another error id (named in the report). The lane treats the expected rejection as success, so this is a genuine change in the participant's command deduplication. |
 | `dpm: command not found` / version too old | `curl -sSL https://get.digitalasset.com/install/install.sh \| sh -s -- 3.5.2`, add `~/.dpm/bin` to `PATH`, need `>= 1.0.20`. |
 | Codegen fails with a JVM/Java error | Ensure a **JDK 17+** is on `PATH` (`java -version`) — the codegen component needs it to decode the DAR. |
-| `codegen-drift` CI failing | Run `./scripts/codegen.sh` (Windows: `pwsh scripts/codegen.ps1`) locally and commit the updated `src/MiniDemo.Contracts/Generated/` files. |
+| Committed `Generated/` differs from a fresh `make codegen` | Run `./scripts/codegen.sh` (Windows: `pwsh scripts/codegen.ps1`) locally and commit the updated `src/MiniDemo.Contracts/Generated/` files. |
 | Want to point at a specific DAR | Set `MINI_DEMO_DAR=/path/to/your.dar` before `dotnet run`. |
 | `6. PQS read model` prints `PQS is not available (…); skipping. Run \`make up PQS=true\` to enable it.` | Expected when the LocalNet was started without PQS — bring it up with `make up PQS=true` in `canton-localnet`, or ignore it: without `--require-pqs` this never fails the run. |
 | `6. PQS read model` prints `PQS did not project the Asset contract …`, with `docker logs` / `psql` hints — or section 3 prints it with `The transfer proposal already committed` | The ledger side already passed, so the ledger is fine; the read model is lagging or `scribe` is down. Run the printed `docker logs --tail 50 pqs-a-validator-1 \| grep -i "unknown Daml package"` — if it matches, scribe is restarting to discover a newly uploaded package and will recover on its own; otherwise check the `scribe`/Postgres containers are up. |
 | `6. PQS read model` reports `PQS projected N of M` with `N < M` | Scribe projects asynchronously; the ledger-side transfer already succeeded. Re-running the demo, or just waiting, resolves it — this is not a defect and does not fail the run. |
 | `6. PQS read model` exits `69` (`--require-pqs was set, and PQS did not reach full projection within the bounded wait.`) | Only happens with `--require-pqs`. Sections 1-5 already passed, so the ledger is fine; PQS was unavailable, timed out with nothing projected, or stayed partial for the whole 120s budget. Same fixes as the two rows above — bring PQS up, or give `scribe` more time and re-run. |
 
-Exit codes: `0` on a clean run, `1` when LocalNet is unreachable, `65` when the demo's own
+Exit codes: `0` on a clean run, `1` when LocalNet is unreachable or the ledger reports a failure the demo does not classify, `65` when the demo's own
 verification fails — a cross-transport divergence in contract ids, keys or `IHolding` views included —
 and the report names what disagreed,
 `75` when LocalNet is reachable but unresponsive, `130` on Ctrl+C. Anything else surfaces as an

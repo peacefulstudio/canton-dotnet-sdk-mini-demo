@@ -17,7 +17,7 @@ help:
 	@echo "override endpoints via CANTON_LOCALNET_* env vars only for a non-default/remote setup."
 
 codegen:
-	./scripts/codegen.sh
+	bash ./scripts/codegen.sh
 
 daml-test:
 	cd daml && dpm build -o test/.daml/lib/canton-mini-demo.dar
