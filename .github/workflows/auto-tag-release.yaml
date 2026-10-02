@@ -38,6 +38,14 @@ jobs:
           set -euo pipefail
           skip() { echo "::notice::$1"; exit 0; }
 
+          release_done_or_running() {
+            gh release view "${tag}" >/dev/null 2>&1 && return 0
+            for status in queued in_progress; do
+              [ "$(gh run list --workflow release.yaml --branch "${tag}" --status "${status}" --json databaseId --jq 'length')" = "0" ] || return 0
+            done
+            return 1
+          }
+
           main_tip="$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq '.object.sha')"
           [ "${main_tip}" = "${HEAD_SHA}" ] || skip "${HEAD_SHA} is no longer the tip of main; a newer run decides"
 
@@ -51,8 +59,10 @@ jobs:
             || { echo "::error::'${version}' in Directory.Build.props is not a release version"; exit 1; }
           tag="v${version}"
 
+          tag_exists=false
           if gh api "repos/${GH_REPO}/git/ref/tags/${tag}" >/dev/null 2>&1; then
-            skip "${tag} already exists"
+            tag_exists=true
+            ! release_done_or_running || skip "${tag} already exists and its release is published or running"
           fi
 
           held="$(gh pr list --state open --label hold-release --json number --jq 'length')"
@@ -61,9 +71,17 @@ jobs:
           .github/scripts/changelog-section.sh "${version}" > /dev/null \
             || { echo "::error::CHANGELOG.md has no non-empty section for ${version}; refusing to tag"; exit 1; }
 
-          gh api -X POST "repos/${GH_REPO}/git/refs" -f "ref=refs/tags/${tag}" -f "sha=${HEAD_SHA}" >/dev/null
-          echo "Tagged ${HEAD_SHA} as ${tag}"
+          if [ "${tag_exists}" = "true" ]; then
+            echo "${tag} exists without a published or running release; dispatching it again"
+          else
+            gh api -X POST "repos/${GH_REPO}/git/refs" -f "ref=refs/tags/${tag}" -f "sha=${HEAD_SHA}" >/dev/null
+            echo "Tagged ${HEAD_SHA} as ${tag}"
+          fi
 
           # Workaround: a tag pushed with GITHUB_TOKEN does not trigger `push` workflows (GitHub Actions
           # behaviour for events created by GITHUB_TOKEN), so the release is dispatched explicitly.
           gh workflow run release.yaml --ref "${tag}" -f "version=${version}"
+          for _ in $(seq 1 30); do
+            release_done_or_running && break
+            sleep 2
+          done
