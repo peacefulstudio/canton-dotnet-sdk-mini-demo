@@ -38,12 +38,25 @@ jobs:
           set -euo pipefail
           skip() { echo "::notice::$1"; exit 0; }
 
+          polling=false
+          lookup_failed() {
+            [ "${polling}" = "true" ] && return 0
+            echo "::error::$1"
+            exit 1
+          }
+
           release_done_or_running() {
-            gh release view "${tag}" >/dev/null 2>&1 && return 0
-            for status in queued in_progress; do
-              [ "$(gh run list --workflow release.yaml --branch "${tag}" --status "${status}" --json databaseId --jq 'length')" = "0" ] || return 0
-            done
-            return 1
+            local view_error runs
+            if view_error="$(gh release view "${tag}" 2>&1 >/dev/null)"; then
+              return 0
+            fi
+            case "${view_error}" in
+              *"release not found"*) ;;
+              *) lookup_failed "gh release view ${tag} failed: ${view_error}"; return 1 ;;
+            esac
+            runs="$(gh run list --workflow release.yaml --branch "${tag}" --limit 1000 --json status --jq '[.[] | select(.status != "completed")] | length' 2>&1)" \
+              || { lookup_failed "gh run list for ${tag} failed: ${runs}"; return 1; }
+            [ "${runs}" != "0" ]
           }
 
           main_tip="$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq '.object.sha')"
@@ -81,6 +94,7 @@ jobs:
           # Workaround: a tag pushed with GITHUB_TOKEN does not trigger `push` workflows (GitHub Actions
           # behaviour for events created by GITHUB_TOKEN), so the release is dispatched explicitly.
           gh workflow run release.yaml --ref "${tag}" -f "version=${version}"
+          polling=true
           for _ in $(seq 1 30); do
             release_done_or_running && break
             sleep 2
