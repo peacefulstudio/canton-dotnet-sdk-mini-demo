@@ -3,24 +3,31 @@
 
 namespace MiniDemo;
 
+internal readonly record struct DarLookup(string? Path, string? Problem);
+
 internal static class DarLocator
 {
-    private const string DarPathEnv = "MINI_DEMO_DAR";
+    public const string DarPathEnv = "MINI_DEMO_DAR";
 
     public static string Resolve()
     {
-        var fromEnv = Environment.GetEnvironmentVariable(DarPathEnv);
-        if (!string.IsNullOrWhiteSpace(fromEnv))
+        var lookup = Locate(Environment.GetEnvironmentVariable(DarPathEnv), AppContext.BaseDirectory);
+        return lookup.Path ?? throw new FileNotFoundException(lookup.Problem);
+    }
+
+    public static DarLookup Locate(string? configuredPath, string baseDirectory)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredPath))
         {
-            var resolved = Path.GetFullPath(fromEnv);
-            if (!File.Exists(resolved))
-                throw new FileNotFoundException($"{DarPathEnv} points to '{resolved}', which does not exist.", resolved);
-            return resolved;
+            var resolved = System.IO.Path.GetFullPath(configuredPath);
+            return File.Exists(resolved)
+                ? new DarLookup(resolved, null)
+                : new DarLookup(null, $"{DarPathEnv} points to '{resolved}', which does not exist.");
         }
 
-        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
+        for (var dir = new DirectoryInfo(baseDirectory); dir is not null; dir = dir.Parent)
         {
-            var dist = Path.Combine(dir.FullName, "daml", ".daml", "dist");
+            var dist = System.IO.Path.Combine(dir.FullName, "daml", ".daml", "dist");
             if (!Directory.Exists(dist))
                 continue;
 
@@ -28,10 +35,11 @@ internal static class DarLocator
                 .OrderByDescending(File.GetLastWriteTimeUtc)
                 .FirstOrDefault();
             if (dar is not null)
-                return dar;
+                return new DarLookup(dar, null);
         }
 
-        throw new FileNotFoundException(
+        return new DarLookup(
+            null,
             "Could not locate a built .dar. Run ./scripts/codegen.sh (or `dpm build` in daml/) first, " +
             $"or set {DarPathEnv} to the .dar path.");
     }

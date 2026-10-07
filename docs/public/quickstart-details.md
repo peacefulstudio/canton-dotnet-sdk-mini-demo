@@ -45,14 +45,20 @@ export CANTON_LOCALNET_AUDIENCE=...             # optional
 export CANTON_LOCALNET_SCOPE=...                # optional
 export CANTON_LOCALNET_LEDGER_GRPC=...          # gRPC Ledger API (default http://localhost:11901, the a-validator-1 port)
 export CANTON_LOCALNET_VALIDATOR_USER_ID=...    # set only when the validator's ledger user isn't the default
-export CANTON_LOCALNET_A_VALIDATOR_1_PQS_CONNECTION_STRING=...  # PQS Postgres connection string (default targets the local a-validator-1 slot's PQS database)
+export CANTON_LOCALNET_A_VALIDATOR_1_PQS_CONNECTION_STRING=...  # PQS Postgres connection string; the name follows the slot (C_VALIDATOR_1 for c-validator-1, …)
 ```
 
-The concrete values are printed by `canton-localnet`'s `make up`. The demo targets a
-**single-synchronizer** validator (one Daml module, one program). For a non-default slot the gRPC address
-still defaults to the `a-validator-1` port, so set `CANTON_LOCALNET_LEDGER_GRPC` (e.g.
-`http://localhost:13901` for `c-validator-1`) and `CANTON_LOCALNET_VALIDATOR_USER_ID` to that
-validator's ledger user — otherwise party setup fails with `USER_NOT_FOUND`.
+`make up` in `canton-localnet` is a plain `docker compose up -d` and prints none of these values. A
+slot's validator ledger user id is the `AUTH_<SLOT>_VALIDATOR_USER_ID` entry (for example
+`AUTH_C_VALIDATOR_1_VALIDATOR_USER_ID`) in that repository's
+`compose/modules/keycloak/env/<slot>/on/oauth2.env`. The demo targets a **single-synchronizer**
+validator (one Daml module, one program). For a non-default slot the gRPC address still defaults to the
+`a-validator-1` port, so set `CANTON_LOCALNET_LEDGER_GRPC` (e.g. `http://localhost:13901` for
+`c-validator-1`) and `CANTON_LOCALNET_VALIDATOR_USER_ID` to that validator's ledger user. Without a user
+id the demo stops before it touches the ledger, names the variable and where to find the value, and exits
+`78`; an unknown `CANTON_LOCALNET_PROFILE` exits `78` the same way (so does a missing built `.dar`, or a `MINI_DEMO_DAR` that points nowhere), as does `sv-validator-1` until you set its token URL, client id and client secret (it has no defaults for them).
+
+PQS follows the slot too: the demo reads the Postgres database `pqs-<slot>` (for example `pqs-c-validator-1`) on the same host, port and credentials as the default, or the connection string in `CANTON_LOCALNET_<SLOT>_PQS_CONNECTION_STRING`. `make up PQS=true` starts PQS for `a-validator-1` only, yet Postgres creates the `pqs-a-validator-1`, `pqs-b-validator-1`, `pqs-c-validator-1` and `pqs-sv-validator-1` databases. On b, c and sv that database exists but stays empty (no tables, no `active` function), so the read fails with SQLSTATE `42883` or `42P01`; `d-validator-1` has no PQS database at all (SQLSTATE `3D000`). The demo treats all of these alike: section 6 reports PQS as not available and moves on (or exits `69` under `--require-pqs`).
 
 > **No private feed, token, or credential is needed to build.** Every SDK package restores from
 > **public nuget.org** — `NuGet.config` lists `nuget.org` only. `dotnet restore` / `dotnet build`
@@ -70,7 +76,8 @@ dotnet run --project src/MiniDemo    # 3. run the integration test (needs a runn
 
 Pass `--require-pqs` to step 3 (`dotnet run --project src/MiniDemo -- --require-pqs`, or
 `REQUIRE_PQS=1 make run`) to make section 6 gate on PQS reaching full projection — see
-[Troubleshooting](troubleshooting.md) for what that changes about the exit code.
+[Troubleshooting](troubleshooting.md) for what that changes about the exit code. The demo exits `69`
+when the requirement is not met, but `make` reports `Error 69` and exits `2` itself, so check for `69` with `dotnet run` directly.
 
 **Windows:** run step 1 as `pwsh scripts/codegen.ps1` — a faithful PowerShell twin of `codegen.sh`
 (Windows PowerShell 5.1 or PowerShell 7+); steps 2 and 3 are byte-for-byte identical. The `make`
@@ -148,7 +155,7 @@ Done — one set of generated bindings drove 2 transports (gRPC and REST) throug
 ```
 
 On startup the program prints the LocalNet endpoints it will target; if LocalNet isn't reachable it
-prints `Canton LocalNet is not reachable (…)` with a hint and exits `1` — it never silently no-ops.
+prints `Canton LocalNet is not reachable, or is not ready yet (…)` with a hint and exits `1` — it never silently no-ops.
 
 Only the identifiers and timestamps move between runs. Every run allocates fresh parties — note the
 per-run suffix on `issuer-…` / `alice-…` / `bob-…` — so the contract ids and those suffixes differ
@@ -163,7 +170,7 @@ Section 6 and the `pqs` line of section 3 are the exception to that rule by defa
 and move on; if it's reachable but still catching up, they poll for up to 120s and report a partial
 count or a timeout hint instead of failing. Neither a hint, a partial count, nor the projected count
 itself changes the exit code — only sections 1-5 do that, unless `--require-pqs` is passed. With that
-flag, an unavailable or a timed-out-with-nothing outcome exits `69` right away; a partial outcome keeps
+flag, an unavailable or a timed-out-with-nothing outcome exits `69` right away — from section 3 if the pending-holding read fails first, leaving alice's proposal pending, otherwise from section 6; a partial outcome keeps
 polling until it either reaches `N of N` on both queries or exhausts the same 120s budget, and in the
 latter case also exits `69` instead of `0`.
 

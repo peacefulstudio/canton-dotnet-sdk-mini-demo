@@ -7,4 +7,4 @@
 name: canton-mini-demo-codegen
 version: 0.0.1
 components:
-  - oci://ghcr.io/peacefulstudio/dpm-codegen-cs:0.6.0-preview.4@sha256:376bc7d3604bad80f02a1eee998d46613c8eeeb41ff8918de6df179d59b7fac7
+  - oci://ghcr.io/peacefulstudio/dpm-codegen-cs:0.6.0@sha256:9f040219936298f085e2ade77fbbc37829df065b879633282aa4628c9a1b6548

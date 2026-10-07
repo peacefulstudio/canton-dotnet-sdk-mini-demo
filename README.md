@@ -6,7 +6,7 @@
   <a href="https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/ci.yaml"><img alt="CI" src="https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/ci.yaml/badge.svg"></a>
   <img alt="Tested on" src="https://img.shields.io/badge/tested%20on-Linux%20%7C%20Windows-2ea44f">
   <img alt=".NET 10" src="https://img.shields.io/badge/.NET-10.0-512BD4">
-  <img alt="Canton SDK" src="https://img.shields.io/badge/Canton%20.NET%20SDK-preview-0A7BBB">
+  <img alt="Canton SDK" src="https://img.shields.io/badge/Canton%20.NET%20SDK-0.6.0-0A7BBB">
   <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue">
 </p>
 
@@ -70,7 +70,7 @@ Prerequisites, configuration overrides, PQS and the full expected output are in 
 
 ## Adopt this in your own app
 
-Add `Daml.Runtime`, `Canton.Ledger.Grpc.Client` and/or `Canton.Ledger.Rest.Client`, and `Canton.Ledger.Kernel` from nuget.org. Write your Daml, generate bindings with `dpm codegen-cs`, register the client with `AddCantonLedger(configuration)`, and submit commands through the generated `TryCreateAsync` and `Try…Async` extensions.
+Add `Daml.Runtime`, `Canton.Ledger.Grpc.Client` and/or `Canton.Ledger.Rest.Client`, and `Canton.Ledger.Kernel` from nuget.org. Write your Daml, generate bindings with `dpm codegen-cs`, register the client (`AddCantonLedger(configuration)` for gRPC, `AddRestLedgerClient(configuration.GetSection("Canton:Rest"), configuration.GetSection("Canton:Auth"))` for JSON/REST), and submit commands through the generated `TryCreateAsync` and `Try…Async` extensions.
 
 The demo's bootstrap helper, `Peaceful.Canton.Localnet.Testing`, is a dev-time tool and not a production dependency. See [Adopt this in your own app](docs/public/adopt-in-your-own-app.md) for the steps.
 
@@ -80,11 +80,11 @@ The demo's bootstrap helper, `Peaceful.Canton.Localnet.Testing`, is a dev-time t
 |---|---|---|
 | How it works | [how-it-works.md](docs/public/how-it-works.md) | see the architecture, the codegen stage and the run-time transfer as a sequence diagram |
 | Quickstart details | [quickstart-details.md](docs/public/quickstart-details.md) | check prerequisites, LocalNet configuration, run options and the expected output |
-| Code walkthrough | [code-walkthrough.md](docs/public/code-walkthrough.md) | see how the transport is chosen, how commands and queries are written, and what the tests cover |
-| Daml and generated C# | [daml-and-generated-code.md](docs/public/daml-and-generated-code.md) | read the Daml model and the C# object model codegen emits from it |
-| Verify with the Canton console | [verify-with-canton-console.md](docs/public/verify-with-canton-console.md) | read the participant's own transaction stream to confirm what landed on-ledger |
+| The code, section by section | [code-walkthrough.md](docs/public/code-walkthrough.md) | see how the transport is chosen, how commands and queries are written, and what the tests cover |
+| The Daml contract and the C# generated from it | [daml-and-generated-code.md](docs/public/daml-and-generated-code.md) | read the Daml model and the C# object model codegen emits from it |
+| Verify on-ledger with the Canton console | [verify-with-canton-console.md](docs/public/verify-with-canton-console.md) | read the participant's own transaction stream to confirm what landed on-ledger |
 | Adopt in your own app | [adopt-in-your-own-app.md](docs/public/adopt-in-your-own-app.md) | lift the pattern into your project, and find where the SDK source lives |
-| Project layout and versions | [project-layout-and-versions.md](docs/public/project-layout-and-versions.md) | find where everything lives and which versions are pinned |
+| Project layout and pinned versions | [project-layout-and-versions.md](docs/public/project-layout-and-versions.md) | find where everything lives and which versions are pinned |
 | How the repo stays honest | [how-the-repo-stays-honest.md](docs/public/how-the-repo-stays-honest.md) | see the CI workflows that re-prove the claims made here |
 | Troubleshooting | [troubleshooting.md](docs/public/troubleshooting.md) | match a symptom to its fix, or look up an exit code |
 

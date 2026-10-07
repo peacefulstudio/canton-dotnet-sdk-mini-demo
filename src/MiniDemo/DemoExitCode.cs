@@ -12,6 +12,7 @@ internal static class DemoExitCode
     public const int VerificationFailed = 65;
     public const int PqsRequirementNotMet = 69;
     public const int Unresponsive = 75;
+    public const int ConfigurationInvalid = 78;
     public const int Interrupted = 130;
 
     public static async Task<int> ForRunAsync(

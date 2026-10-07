@@ -25,6 +25,24 @@ public class PqsAvailabilityTests
             .Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData("42883")]
+    [InlineData("42P01")]
+    public void IsPqsUnavailable_is_true_for_a_database_scribe_never_initialised(string sqlState)
+    {
+        var uninitialised = new PostgresException("relation or function missing", "ERROR", "ERROR", sqlState);
+
+        PqsAvailability.IsPqsUnavailable(uninitialised).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsPqsUnavailable_is_true_for_a_wrapped_undefined_function_error()
+    {
+        var undefined = new PostgresException("function active(text) does not exist", "ERROR", "ERROR", "42883");
+
+        PqsAvailability.IsPqsUnavailable(new InvalidOperationException("outer", undefined)).Should().BeTrue();
+    }
+
     [Fact]
     public void IsPqsUnavailable_is_false_for_an_unrelated_postgres_error()
     {
@@ -61,5 +79,14 @@ public class PqsAvailabilityTests
     public void IsPqsUnavailable_is_false_for_an_unrelated_exception()
     {
         PqsAvailability.IsPqsUnavailable(new InvalidOperationException("boom")).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Unavailable_requirement_failure_message_stays_on_one_line()
+    {
+        var cause = new InvalidOperationException("function active(text) does not exist\n\nPOSITION: 34");
+
+        PqsRequirementNotMetException.Unavailable(cause).Message
+            .Should().Be("PQS was never available (function active(text) does not exist POSITION: 34).");
     }
 }

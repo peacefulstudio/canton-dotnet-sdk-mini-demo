@@ -8,6 +8,7 @@ using Canton.Ledger.Abstractions;
 using Canton.Ledger.Testing;
 using Daml.Runtime.Contracts;
 using Daml.Runtime.Data;
+using Npgsql;
 using Splice.Api.Token.HoldingV2;
 using Splice.Api.Token.MetadataV1;
 using Xunit;
@@ -133,6 +134,49 @@ public class PqsLaneTests
     }
 
     [Fact]
+    public async Task RunAsync_offers_make_up_only_for_the_slot_that_make_up_starts()
+    {
+        var report = await RunUnavailableAsync("Host=h;Port=5432;Database=pqs-a-validator-1;Username=u;Password=p");
+
+        report.Should().Contain("Run `make up PQS=true` to enable it.");
+    }
+
+    [Fact]
+    public async Task RunAsync_says_make_up_does_not_start_pqs_for_another_slot()
+    {
+        var report = await RunUnavailableAsync("Host=h;Port=5432;Database=pqs-c-validator-1;Username=u;Password=p");
+
+        report.Should().Contain("`make up PQS=true` does not start PQS for c-validator-1");
+        report.Should().NotContain("to enable it");
+    }
+
+    [Fact]
+    public async Task RunAsync_keeps_the_unavailable_hint_on_one_line_when_the_cause_spans_lines()
+    {
+        var report = await RunUnavailableAsync(
+            PqsConnectionString.DefaultConnectionString, "function active(text) does not exist\n\nPOSITION: 34");
+
+        report.Should().Contain("PQS is not available (42883: function active(text) does not exist POSITION: 34); skipping.");
+    }
+
+    private static async Task<string> RunUnavailableAsync(
+        string connectionString, string message = "function active(text) does not exist")
+    {
+        var stub = new StubPqsClient
+        {
+            FetchByIdBehavior = _ => throw new PostgresException(message, "ERROR", "ERROR", "42883"),
+        };
+        var writtenAssets = new[] { new WrittenAsset(Transport(), new ContractId<DemoAsset>("asset-2"), new AssetKey("issuer", "GOLD")) };
+        var writer = new StringWriter();
+
+        await PqsLane.RunAsync(
+            5, stub, connectionString, writtenAssets, Alice, "alice", writer,
+            ShortTimeout, ShortPollInterval, LongProgressAfter, false, CancellationToken.None);
+
+        return writer.ToString();
+    }
+
+    [Fact]
     public async Task RunAsync_reports_a_troubleshooting_hint_when_the_projection_never_lands_within_the_budget()
     {
         var stub = new StubPqsClient { FetchByIdBehavior = _ => Task.FromResult<Contract<DemoAsset>?>(null) };
@@ -191,6 +235,100 @@ public class PqsLaneTests
             ShortTimeout, ShortPollInterval, LongProgressAfter, true, CancellationToken.None);
 
         await act.Should().ThrowAsync<PqsRequirementNotMetException>();
+    }
+
+    [Fact]
+    public async Task RunAsync_does_not_claim_to_skip_when_pqs_is_unavailable_and_required()
+    {
+        var stub = new StubPqsClient
+        {
+            FetchByIdBehavior = _ => throw new SocketException((int)SocketError.ConnectionRefused),
+        };
+        var writtenAssets = new[] { new WrittenAsset(Transport(), new ContractId<DemoAsset>("asset-2"), new AssetKey("issuer", "GOLD")) };
+        var writer = new StringWriter();
+
+        var act = () => PqsLane.RunAsync(
+            5, stub, PqsConnectionString.DefaultConnectionString, writtenAssets, Alice, "alice", writer,
+            ShortTimeout, ShortPollInterval, LongProgressAfter, true, CancellationToken.None);
+
+        var thrown = (await act.Should().ThrowAsync<PqsRequirementNotMetException>()).Which;
+        thrown.PqsWasUnavailable.Should().BeTrue();
+        writer.ToString().Should().NotContain("skipping");
+        writer.ToString().Should().Contain("--require-pqs is set");
+    }
+
+    [Fact]
+    public async Task ReadLockedHoldingAsync_throws_with_the_pending_holding_stage_and_RunAsync_with_the_projection_stage()
+    {
+        var stub = new StubPqsClient
+        {
+            FetchByIdBehavior = _ => throw new SocketException((int)SocketError.ConnectionRefused),
+        };
+        var writer = new StringWriter();
+
+        var pendingRead = () => PqsLane.ReadLockedHoldingAsync(
+            stub, PqsConnectionString.DefaultConnectionString, new ContractId<DemoAsset>("asset-locked"), writer,
+            ShortTimeout, ShortPollInterval, LongProgressAfter, true, CancellationToken.None);
+        var projection = () => PqsLane.RunAsync(
+            5, stub, PqsConnectionString.DefaultConnectionString,
+            [new WrittenAsset(Transport(), new ContractId<DemoAsset>("asset-2"), new AssetKey("issuer", "GOLD"))],
+            Alice, "alice", writer, ShortTimeout, ShortPollInterval, LongProgressAfter, true, CancellationToken.None);
+
+        (await pendingRead.Should().ThrowAsync<PqsRequirementNotMetException>()).Which.Stage
+            .Should().Be(PqsRequirementStage.PendingHoldingRead);
+        (await projection.Should().ThrowAsync<PqsRequirementNotMetException>()).Which.Stage
+            .Should().Be(PqsRequirementStage.ProjectionReport);
+    }
+
+    [Fact]
+    public async Task RunAsync_still_says_skipping_when_pqs_is_unavailable_and_not_required()
+    {
+        var stub = new StubPqsClient
+        {
+            FetchByIdBehavior = _ => throw new SocketException((int)SocketError.ConnectionRefused),
+        };
+        var writtenAssets = new[] { new WrittenAsset(Transport(), new ContractId<DemoAsset>("asset-2"), new AssetKey("issuer", "GOLD")) };
+        var writer = new StringWriter();
+
+        await PqsLane.RunAsync(
+            5, stub, PqsConnectionString.DefaultConnectionString, writtenAssets, Alice, "alice", writer,
+            ShortTimeout, ShortPollInterval, LongProgressAfter, false, CancellationToken.None);
+
+        writer.ToString().Should().Contain("skipping");
+    }
+
+    [Fact]
+    public async Task RunAsync_lists_assets_and_holdings_by_amount_descending_then_contract_id()
+    {
+        Contract<DemoAsset> StagedAsset(string id, decimal amount) =>
+            new(new ContractId<DemoAsset>(id), new DemoAsset(Issuer: Issuer, Owner: Alice, Name: "GOLD", Amount: amount, Lock: null));
+        InterfaceContract<IHolding, HoldingView> Holding(string id, decimal amount) =>
+            new(new ContractId<IHolding>(id),
+                new HoldingView(
+                    new Account(Alice, Provider: null, Id: ""),
+                    new InstrumentId(Issuer, "GOLD"),
+                    amount,
+                    Lock: null,
+                    new Metadata(new Dictionary<string, string>())));
+        var amounts = new (string Id, decimal Amount)[] { ("a-low", 10m), ("c-tie", 42m), ("b-tie", 42m) };
+        var pqsClient = FakePqsClient.Create()
+            .WithQueryResults(amounts.Select(entry => StagedAsset(entry.Id, entry.Amount)).ToArray())
+            .Build();
+        var writtenAssets = amounts
+            .Select(entry => new WrittenAsset(Transport(), new ContractId<DemoAsset>(entry.Id), new AssetKey("issuer", "GOLD")))
+            .ToArray();
+        var writer = new StringWriter();
+
+        await PqsLane.RunAsync(
+            5, pqsClient, PqsConnectionString.DefaultConnectionString, writtenAssets, Alice, "alice", writer,
+            ShortTimeout, ShortPollInterval, LongProgressAfter, false, CancellationToken.None,
+            FakeHoldingsQuery(amounts.Select(entry => Holding(entry.Id, entry.Amount)).ToArray()));
+
+        var lines = writer.ToString().Split('\n');
+        var assetOrder = lines.Where(line => line.Contains("name=GOLD")).Select(line => line.Trim().Split(' ')[0]).ToArray();
+        var holdingOrder = lines.Where(line => line.Contains("instrument=GOLD")).Select(line => line.Trim().Split(' ')[0]).ToArray();
+        assetOrder.Should().Equal("b-tie", "c-tie", "a-low");
+        holdingOrder.Should().Equal("b-tie", "c-tie", "a-low");
     }
 
     [Fact]

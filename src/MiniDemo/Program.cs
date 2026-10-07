@@ -19,9 +19,17 @@ var ct = cts.Token;
 var requirePqs = args.Contains("--require-pqs", StringComparer.Ordinal);
 
 var env = LocalnetPreflight.ReadEnvironment();
+var configurationProblem = LocalnetConfiguration.FindProblem(env)
+    ?? DarLocator.Locate(env.GetValueOrDefault(DarLocator.DarPathEnv), AppContext.BaseDirectory).Problem;
+if (configurationProblem is not null)
+{
+    LocalnetPreflight.WriteConfigurationProblem(configurationProblem, Console.Error);
+    return DemoExitCode.ConfigurationInvalid;
+}
+
 var grpcAddress = LedgerEndpoint.Resolve(env);
 var jsonApiAddress = LedgerEndpoint.ResolveJsonApi(env);
-var pqsConnectionString = PqsConnectionString.Resolve(env);
+var pqsConnectionString = PqsConnectionString.Resolve(EndpointDiscovery.ResolveProfile(env), env);
 LocalnetPreflight.WriteTargetSummary(env, Console.Out);
 
 using var loggerFactory = LoggerFactory.Create(builder =>

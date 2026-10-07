@@ -335,7 +335,7 @@ internal sealed class MiniDemoRunner
         if (pqsClient is null)
             return;
 
-        await GuardPqsAsync("PQS pending-holding read", output, requirePqs, async () =>
+        await GuardPqsAsync("PQS pending-holding read", PqsRequirementStage.PendingHoldingRead, output, requirePqs, async () =>
         {
             var projected = await PqsLane.ReadLockedHoldingAsync(
                 pqsClient,
@@ -421,7 +421,7 @@ internal sealed class MiniDemoRunner
         if (pqsClient is null)
             return;
 
-        await GuardPqsAsync("PQS lane", output, requirePqs, () => PqsLane.RunAsync(
+        await GuardPqsAsync("PQS lane", PqsRequirementStage.ProjectionReport, output, requirePqs, () => PqsLane.RunAsync(
             section,
             pqsClient,
             connectionString,
@@ -437,7 +437,7 @@ internal sealed class MiniDemoRunner
             holdingsFilterQuery));
     }
 
-    private static async Task GuardPqsAsync(string step, TextWriter output, bool requirePqs, Func<Task> read)
+    private static async Task GuardPqsAsync(string step, PqsRequirementStage stage, TextWriter output, bool requirePqs, Func<Task> read)
     {
         try
         {
@@ -450,7 +450,7 @@ internal sealed class MiniDemoRunner
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             if (requirePqs)
-                throw new PqsRequirementNotMetException($"{step} failed ({ex.Message}).", ex);
+                throw new PqsRequirementNotMetException($"{step} failed ({ex.Message}).", ex, stage);
 
             output.WriteLine($"  {step} failed ({ex.Message}); the ledger sections above already passed.");
         }
