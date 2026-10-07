@@ -9,6 +9,36 @@ after a release takes a fourth identifier, for example `0.6.0-preview.3.1`.
 
 ## [Unreleased]
 
+## [0.6.0-preview.4] — 2026-10-07
+
+The dependency line moves to the **Canton .NET SDK 0.6.0-preview.4**: one failure contract on both transports, choice results exactly as the Daml returns them, and self-registering generated code. The demo's behavior and console output are unchanged.
+
+**TL;DR** — the same zero-config `dotnet run` still issues a keyed `GOLD` instrument, mints 42 GOLD to **alice**, has **alice** propose a transfer to **bob** over **gRPC** and **bob** accept it over **JSON/REST** with the locked holding **disclosed**, then observes it on the update stream over both transports. Built on the **Canton .NET SDK 0.6.0-preview.4** (every `Daml.*` / `Canton.Ledger.*` package and the `dpm-codegen-cs` component) and the Splice **1.0.0.16-preview.4** token-standard bindings, with Daml SDK **3.5.2** targeting Daml-LF **2.3**, against **LocalNet 0.8.4-1** or later. 🎉
+
+### 🎯 What changed
+
+- **Canton .NET SDK 0.6.0-preview.4** — every `Daml.*` and `Canton.Ledger.*` package, the `dpm-codegen-cs` component (still pinned by digest), the Splice `holding-v2` and `transfer-instruction-v2` C# bindings (`1.0.0.16-preview.4`) move together. ⬆️
+- **Regenerated bindings** — the committed C# under `src/MiniDemo.Contracts/Generated` is regenerated with the new emitter: `global::`-qualified references and a generated package registration for the `MiniDemo.Asset` module, so the JSON Ledger API client decodes `Asset` payloads through the registry. 📇
+- **Choice results match the Daml** — `Instrument.Mint` returns the `ContractId<Asset>` it creates, and the generated `MintResult` wrapper is gone. The by-key mint now reads the one created `Asset` with `TransactionResult.Single<Asset>()`. 🎯
+
+### ▶️ Run it
+
+```sh
+./scripts/codegen.sh                                 # dpm build → dpm codegen-cs        [make codegen]
+dotnet build MiniDemo.slnx                           #                                   [make build]
+dotnet run --project src/MiniDemo                    # zero-config; defaults to a-validator-1   [make run]
+dotnet run --project src/MiniDemo -- --require-pqs   # gate the exit code on PQS too     [REQUIRE_PQS=1 make run]
+```
+
+Needs a Canton **LocalNet 0.8.4-1 or later** up (JSON `:11975` / gRPC `:11901`) from [`canton-localnet`](https://github.com/peacefulstudio/canton-localnet) — `make up PQS=true` there if you want the PQS lane to project — plus `dpm` `>= 1.0.20` with Daml SDK `3.5.2` and a JDK 17+. On Windows, run `pwsh scripts/codegen.ps1` for the first step. Any endpoint, party, token or PQS override still rides a `CANTON_LOCALNET_*` env var — but the happy path needs none.
+
+### 🧪 Under the hood
+
+- Unit tests in `tests/MiniDemo.Tests` run against `Canton.Ledger.Testing` fakes, so the suite stays green with no LocalNet.
+- Generated bindings stay committed under `src/MiniDemo.Contracts/Generated` — regenerate with `scripts/codegen.sh` (pinned to `dpm-codegen-cs:0.6.0-preview.4` by digest). Clear the dpm component cache first when moving between SDK versions.
+
+📖 Start at the [README](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/README.md) — it walks the whole Daml → codegen → two-step transfer → update-stream loop, section by section.
+
 ## [0.6.0-preview.3] — 2026-10-01
 
 The two-step transfer now has an **audience**: after bob accepts, the demo watches the ledger emit the transaction on the **update stream** — over **both** transports — instead of only reading state back. The dependency line moves to the **Canton .NET SDK 0.6.0-preview.3**, and the README is re-checked against a real run.
@@ -112,7 +142,8 @@ Needs a Canton **LocalNet 0.6.11** up (JSON `:11975` / gRPC `:11901`) and the `d
 
 📖 Start at the [README](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/README.md) — it walks the whole Daml → codegen → run loop.
 
-[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.3...HEAD
+[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.4...HEAD
+[0.6.0-preview.4]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.3...v0.6.0-preview.4
 [0.6.0-preview.3]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.2...v0.6.0-preview.3
 [0.6.0-preview.2]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.4.0-preview.1...v0.6.0-preview.2
 [0.4.0-preview.1]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/releases/tag/v0.4.0-preview.1

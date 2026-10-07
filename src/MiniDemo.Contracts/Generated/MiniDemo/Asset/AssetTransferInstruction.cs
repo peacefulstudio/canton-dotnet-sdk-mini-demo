@@ -23,13 +23,13 @@ namespace MiniDemo.Asset;
 /// Generated from Daml template MiniDemo.Asset:AssetTransferInstruction
 /// </summary>
 public sealed partial record AssetTransferInstruction(
-    [property: DamlFieldAttribute("issuer")] Party Issuer,
-    [property: DamlFieldAttribute("transfer")] global::Splice.Api.Token.TransferInstructionV2.Transfer Transfer,
-    [property: DamlFieldAttribute("lockedHoldingCid")] ContractId<Asset> LockedHoldingCid
-) : ITemplate, IImplements<global::Splice.Api.Token.TransferInstructionV2.ITransferInstruction>, IHasChoices<AssetTransferInstruction>, IDamlRecord<AssetTransferInstruction>
+    [property: global::Daml.Runtime.Data.DamlFieldAttribute("issuer")] global::Daml.Runtime.Data.Party Issuer,
+    [property: global::Daml.Runtime.Data.DamlFieldAttribute("transfer")] global::Splice.Api.Token.TransferInstructionV2.Transfer Transfer,
+    [property: global::Daml.Runtime.Data.DamlFieldAttribute("lockedHoldingCid")] global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Asset> LockedHoldingCid
+) : global::Daml.Runtime.Contracts.ITemplate, global::Daml.Runtime.Contracts.IImplements<global::Splice.Api.Token.TransferInstructionV2.ITransferInstruction>, global::Daml.Runtime.Contracts.IHasChoices<AssetTransferInstruction>, global::Daml.Runtime.Data.IDamlRecord<AssetTransferInstruction>
 {
     /// <summary>Gets the template identifier.</summary>
-    public static Identifier TemplateId { get; } = new("1c7a18f31befd3df5426c623abcbe71fcfe796665de0feefd09ce752ef7fa9fb", "MiniDemo.Asset", "AssetTransferInstruction");
+    public static global::Daml.Runtime.Data.Identifier TemplateId { get; } = new("1c7a18f31befd3df5426c623abcbe71fcfe796665de0feefd09ce752ef7fa9fb", "MiniDemo.Asset", "AssetTransferInstruction");
 
     /// <summary>Gets the package ID.</summary>
     public static string PackageId => "1c7a18f31befd3df5426c623abcbe71fcfe796665de0feefd09ce752ef7fa9fb";
@@ -38,34 +38,34 @@ public sealed partial record AssetTransferInstruction(
     public static string PackageName => "canton-mini-demo-hbde402d4f83a";
 
     /// <summary>Gets the package version.</summary>
-    public static Version PackageVersion { get; } = new(0, 1, 0);
+    public static global::System.Version PackageVersion { get; } = new(0, 1, 0);
 
     /// <summary>Gets the compile-time Daml type descriptor.</summary>
-    public static DamlTypeDescriptor DamlTypeId { get; } = new(TemplateId, DamlTypeKind.Template, PackageName);
+    public static global::Daml.Runtime.Contracts.DamlTypeDescriptor DamlTypeId { get; } = new(TemplateId, global::Daml.Runtime.Contracts.DamlTypeKind.Template, PackageName);
 
     /// <summary>Converts this value to a DamlRecord.</summary>
-    public DamlRecord ToRecord() => DamlRecord.Create(
-        DamlField.Create("issuer", Issuer.ToDamlValue()),
-        DamlField.Create("transfer", Transfer.ToRecord()),
-        DamlField.Create("lockedHoldingCid", LockedHoldingCid.ToDamlValue())
+    public global::Daml.Runtime.Data.DamlRecord ToRecord() => global::Daml.Runtime.Data.DamlRecord.Create(
+        global::Daml.Runtime.Data.DamlField.Create("issuer", Issuer.ToDamlValue()),
+        global::Daml.Runtime.Data.DamlField.Create("transfer", Transfer.ToRecord()),
+        global::Daml.Runtime.Data.DamlField.Create("lockedHoldingCid", LockedHoldingCid.ToDamlValue())
     );
 
     /// <summary>Creates an instance from a DamlRecord.</summary>
-    public static AssetTransferInstruction FromRecord(DamlRecord record) => new AssetTransferInstruction(
-        Issuer: Party.FromDamlValue(record.GetRequiredField("issuer").As<DamlParty>()),
-        Transfer: global::Splice.Api.Token.TransferInstructionV2.Transfer.FromRecord(record.GetRequiredField("transfer").As<DamlRecord>()),
-        LockedHoldingCid: new ContractId<Asset>(record.GetRequiredField("lockedHoldingCid").As<DamlContractId>().Value)
+    public static AssetTransferInstruction FromRecord(global::Daml.Runtime.Data.DamlRecord record) => new AssetTransferInstruction(
+        Issuer: global::Daml.Runtime.Data.Party.FromDamlValue(record.GetRequiredField("issuer").As<global::Daml.Runtime.Data.DamlParty>()),
+        Transfer: global::Splice.Api.Token.TransferInstructionV2.Transfer.FromRecord(record.GetRequiredField("transfer").As<global::Daml.Runtime.Data.DamlRecord>()),
+        LockedHoldingCid: new global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Asset>(record.GetRequiredField("lockedHoldingCid").As<global::Daml.Runtime.Contracts.DamlContractId>().Value)
     );
 
     /// <summary>Decodes a Daml-LF JSON record directly into a DamlRecord, without going through reflection.</summary>
     [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-    public static DamlRecord __ReadDamlLfJson(global::System.Text.Json.JsonElement json, global::Daml.Runtime.Serialization.DamlLfJsonDecodeContext context)
+    public static global::Daml.Runtime.Data.DamlRecord __ReadDamlLfJson(global::System.Text.Json.JsonElement json, global::Daml.Runtime.Serialization.DamlLfJsonDecodeContext context)
     {
         global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireObject(json, context);
-        return DamlRecord.Create(
-            DamlField.Create("issuer", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "issuer"), context.Field("issuer"))),
-            DamlField.Create("transfer", global::Splice.Api.Token.TransferInstructionV2.Transfer.__ReadDamlLfJson(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "transfer"), context.Field("transfer"))),
-            DamlField.Create("lockedHoldingCid", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadContractId(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "lockedHoldingCid"), context.Field("lockedHoldingCid")))
+        return global::Daml.Runtime.Data.DamlRecord.Create(
+            global::Daml.Runtime.Data.DamlField.Create("issuer", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "issuer"), context.Field("issuer"))),
+            global::Daml.Runtime.Data.DamlField.Create("transfer", global::Splice.Api.Token.TransferInstructionV2.Transfer.__ReadDamlLfJson(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "transfer"), context.Field("transfer"))),
+            global::Daml.Runtime.Data.DamlField.Create("lockedHoldingCid", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadContractId(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "lockedHoldingCid"), context.Field("lockedHoldingCid")))
         );
     }
 
@@ -73,23 +73,23 @@ public sealed partial record AssetTransferInstruction(
     /// Exercise the Archive choice.
     /// This choice is consuming and will archive the contract.
     /// </summary>
-    public static Choice<AssetTransferInstruction, DamlUnit, DamlUnit> ChoiceArchive { get; } = new()
+    public static global::Daml.Runtime.Commands.Choice<AssetTransferInstruction, global::Daml.Runtime.Data.DamlUnit, global::Daml.Runtime.Data.DamlUnit> ChoiceArchive { get; } = new()
     {
-        Name = new ChoiceName("Archive"),
+        Name = new global::Daml.Runtime.Commands.ChoiceName("Archive"),
         Consuming = true,
-        ArgumentEncoder = _ => DamlRecord.Create(),
-        ArgumentDecoder = val => val is DamlRecord { Fields.Count: 0 } ? DamlUnit.Instance : throw new global::System.InvalidOperationException("Choice 'Archive' argument must decode to an empty record."),
-        ResultDecoder = _ => DamlUnit.Instance,
+        ArgumentEncoder = _ => global::Daml.Runtime.Data.DamlRecord.Create(),
+        ArgumentDecoder = val => val is global::Daml.Runtime.Data.DamlRecord { Fields.Count: 0 } ? global::Daml.Runtime.Data.DamlUnit.Instance : throw new global::System.InvalidOperationException("Choice 'Archive' argument must decode to an empty record."),
+        ResultDecoder = _ => global::Daml.Runtime.Data.DamlUnit.Instance,
         ArgumentJsonReader = (json, context) =>
         {
             global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireObject(json, context);
-            return DamlRecord.Create();
+            return global::Daml.Runtime.Data.DamlRecord.Create();
         },
         ResultJsonReader = (json, context) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadUnit(json, context),
     };
 
     /// <summary>Gets the choice descriptors declared by this type.</summary>
-    public static IReadOnlyList<IChoice> Choices { get; } = [ChoiceArchive];
+    public static global::System.Collections.Generic.IReadOnlyList<global::Daml.Runtime.Commands.IChoice> Choices { get; } = [ChoiceArchive];
 
 }
 
@@ -115,23 +115,23 @@ public static class AssetTransferInstructionSubmissionExtensions
     /// <param name="payload">The contract payload.</param>
     /// <param name="configure">Optional hook that receives the submission built for this call and returns the one to submit, so a caller can add what this helper does not expose: <c>s => s.WithDisclosedContracts(holding.Disclosure!)</c>, <c>WithDeduplicationPeriod</c>, <c>WithSynchronizerId</c> or <c>WithMinLedgerTime</c>. It must keep the helper's command, and the submitter's act-as and read-as parties replace any set on the submission. The default <c>null</c> submits the submission unchanged.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public static Task<ExerciseOutcome<ContractId<AssetTransferInstruction>>> TryCreateAsync(
-        this ILedgerWriter client,
+    public static global::System.Threading.Tasks.Task<global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Contracts.ContractId<AssetTransferInstruction>>> TryCreateAsync(
+        this global::Daml.Ledger.Abstractions.ILedgerWriter client,
         AssetTransferInstruction payload,
-        Func<CommandsSubmission, CommandsSubmission>? configure = null,
-        CancellationToken cancellationToken = default)
+        global::System.Func<global::Daml.Runtime.Commands.CommandsSubmission, global::Daml.Runtime.Commands.CommandsSubmission>? configure = null,
+        global::System.Threading.CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(client);
-        ArgumentNullException.ThrowIfNull(payload);
+        global::System.ArgumentNullException.ThrowIfNull(client);
+        global::System.ArgumentNullException.ThrowIfNull(payload);
 
-        SubmitterInfo submitter = payload.Issuer;
+        global::Daml.Runtime.Commands.SubmitterInfo submitter = payload.Issuer;
 
         return global::Daml.Ledger.Abstractions.Extensions.SingleCommandExtensions.TryCreateAsync<AssetTransferInstruction>(client, payload, submitter, configure: configure, cancellationToken: cancellationToken);
     }
 }
 
 /// <summary>
-/// Async exerciser extensions for <see cref="AssetTransferInstruction"/> contract IDs whose choices
+/// Async exerciser extensions for <see cref="global::MiniDemo.Asset.AssetTransferInstruction"/> contract IDs whose choices
 /// return a non-contract-id payload (Decimal, records, lists, Unit, etc.).
 /// Each method submits the choice via
 /// <c>SingleCommandExtensions.TrySubmitSingleAsync</c> and lifts the typed result
@@ -143,20 +143,20 @@ public static class AssetTransferInstructionNonContractExtensions
     /// Builds the <see cref="global::Daml.Runtime.Commands.ExerciseCommand"/> for the Archive choice on this contract id.
     /// </summary>
     /// <param name="contractId">The contract on which to exercise the choice.</param>
-    public static ExerciseCommand ArchiveCommand(
-        this ContractId<AssetTransferInstruction> contractId)
+    public static global::Daml.Runtime.Commands.ExerciseCommand ArchiveCommand(
+        this global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.AssetTransferInstruction> contractId)
     {
-        ArgumentNullException.ThrowIfNull(contractId);
-        return new ExerciseCommand(
-            AssetTransferInstruction.TemplateId,
+        global::System.ArgumentNullException.ThrowIfNull(contractId);
+        return new global::Daml.Runtime.Commands.ExerciseCommand(
+            global::MiniDemo.Asset.AssetTransferInstruction.TemplateId,
             contractId,
-            new ChoiceName("Archive"),
-            DamlRecord.Create());
+            new global::Daml.Runtime.Commands.ChoiceName("Archive"),
+            global::Daml.Runtime.Data.DamlRecord.Create());
     }
 
     /// <summary>
     /// Exercises the Archive choice and lifts the choice's exercise result to
-    /// <see cref="ExerciseOutcome{T}"/> over <c>DamlUnit</c>. Structured Canton/Daml errors
+    /// <see cref="ExerciseOutcome{T}"/> over <c>global::Daml.Runtime.Data.DamlUnit</c>. Structured Canton/Daml errors
     /// and infrastructure/transport errors pass through unchanged.
     /// </summary>
     /// <param name="contractId">The contract on which to exercise the choice.</param>
@@ -167,17 +167,17 @@ public static class AssetTransferInstructionNonContractExtensions
     /// <param name="timeout">Optional per-call deadline, applied best-effort by the transport; transports without a server-side deadline apply a client-side bound only. The default <c>null</c> applies no deadline. An overrun surfaces as an <c>InfraError</c> outcome.</param>
     /// <param name="configure">Optional hook that receives the submission built for this call and returns the one to submit, so a caller can add what this helper does not expose: <c>s => s.WithDisclosedContracts(holding.Disclosure!)</c>, <c>WithDeduplicationPeriod</c>, <c>WithSynchronizerId</c> or <c>WithMinLedgerTime</c>. It runs after <c>workflowId</c> and <c>commandId</c> are applied. It must keep the helper's command, and the submitter's act-as and read-as parties replace any set on the submission. The default <c>null</c> submits the submission unchanged.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public static async Task<ExerciseOutcome<DamlUnit>> TryArchiveAsync(
-        this ContractId<AssetTransferInstruction> contractId,
-        ILedgerWriter client,
-        SubmitterInfo submitter,
+    public static async global::System.Threading.Tasks.Task<global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Data.DamlUnit>> TryArchiveAsync(
+        this global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.AssetTransferInstruction> contractId,
+        global::Daml.Ledger.Abstractions.ILedgerWriter client,
+        global::Daml.Runtime.Commands.SubmitterInfo submitter,
         string? workflowId = null,
-        CommandId? commandId = null,
-        TimeSpan? timeout = null,
-        Func<CommandsSubmission, CommandsSubmission>? configure = null,
-        CancellationToken cancellationToken = default)
+        global::Daml.Runtime.Commands.CommandId? commandId = null,
+        global::System.TimeSpan? timeout = null,
+        global::System.Func<global::Daml.Runtime.Commands.CommandsSubmission, global::Daml.Runtime.Commands.CommandsSubmission>? configure = null,
+        global::System.Threading.CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(client);
+        global::System.ArgumentNullException.ThrowIfNull(client);
 
         var command = contractId.ArchiveCommand();
 
@@ -186,32 +186,6 @@ public static class AssetTransferInstructionNonContractExtensions
         return outcome.ProjectCommitted(tx => ProjectArchiveResult(tx, contractId.Value));
     }
 
-    private static ExerciseOutcome<DamlUnit> ProjectArchiveResult(TransactionResult tx, string contractId)
-    {
-        foreach (var exercised in tx.ExercisedEvents)
-        {
-            if (string.Equals(exercised.ContractId, contractId, StringComparison.Ordinal)
-                && string.Equals(exercised.TemplateId.ModuleName, AssetTransferInstruction.TemplateId.ModuleName, StringComparison.Ordinal)
-                && string.Equals(exercised.TemplateId.EntityName, AssetTransferInstruction.TemplateId.EntityName, StringComparison.Ordinal)
-                && string.Equals(exercised.ChoiceName.Value, "Archive", StringComparison.Ordinal))
-            {
-                try
-                {
-                    var decoded = AssetTransferInstruction.ChoiceArchive.ResultDecoder!(exercised.ExerciseResult);
-                    return new ExerciseOutcome<DamlUnit>.One(decoded);
-                }
-                catch (global::System.Exception ex) when (ex is not global::System.OperationCanceledException)
-                {
-                    return new ExerciseOutcome<DamlUnit>.CommittedUndecodable(tx.UpdateId, ex.Message, ex);
-                }
-            }
-        }
-
-        throw new InvalidOperationException(
-            $"Submission succeeded but no 'Archive' exercise on contract '{contractId}' was recorded on transaction {tx.UpdateId}. " +
-            "The transaction returned for this submission carries no exercised event for it. " +
-            "Either a custom ILedgerWriter did not project the transaction's exercised events into TransactionResult.ExercisedEvents, " +
-            "or the transaction was requested in a shape without exercised events (ACS_DELTA); " +
-            "request the LEDGER_EFFECTS shape with verbose events.");
-    }
+    private static global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Data.DamlUnit> ProjectArchiveResult(global::Daml.Runtime.Contracts.TransactionResult tx, string contractId) =>
+        tx.ProjectChoiceResult(global::MiniDemo.Asset.AssetTransferInstruction.ChoiceArchive, contractId);
 }

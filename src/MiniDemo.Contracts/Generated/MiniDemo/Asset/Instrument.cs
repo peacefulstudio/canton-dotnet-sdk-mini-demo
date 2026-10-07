@@ -23,12 +23,12 @@ namespace MiniDemo.Asset;
 /// Generated from Daml template MiniDemo.Asset:Instrument
 /// </summary>
 public sealed partial record Instrument(
-    [property: DamlFieldAttribute("issuer")] Party Issuer,
-    [property: DamlFieldAttribute("name")] string Name
-) : ITemplate, IHasKey<Instrument, Tuple2<Party, string>>, IHasChoices<Instrument>, IDamlRecord<Instrument>
+    [property: global::Daml.Runtime.Data.DamlFieldAttribute("issuer")] global::Daml.Runtime.Data.Party Issuer,
+    [property: global::Daml.Runtime.Data.DamlFieldAttribute("name")] string Name
+) : global::Daml.Runtime.Contracts.ITemplate, global::Daml.Runtime.Contracts.IHasKey<Instrument, global::Daml.Runtime.Stdlib.Tuple2<global::Daml.Runtime.Data.Party, string>>, global::Daml.Runtime.Contracts.IHasChoices<Instrument>, global::Daml.Runtime.Data.IDamlRecord<Instrument>
 {
     /// <summary>Gets the template identifier.</summary>
-    public static Identifier TemplateId { get; } = new("1c7a18f31befd3df5426c623abcbe71fcfe796665de0feefd09ce752ef7fa9fb", "MiniDemo.Asset", "Instrument");
+    public static global::Daml.Runtime.Data.Identifier TemplateId { get; } = new("1c7a18f31befd3df5426c623abcbe71fcfe796665de0feefd09ce752ef7fa9fb", "MiniDemo.Asset", "Instrument");
 
     /// <summary>Gets the package ID.</summary>
     public static string PackageId => "1c7a18f31befd3df5426c623abcbe71fcfe796665de0feefd09ce752ef7fa9fb";
@@ -37,40 +37,40 @@ public sealed partial record Instrument(
     public static string PackageName => "canton-mini-demo-hbde402d4f83a";
 
     /// <summary>Gets the package version.</summary>
-    public static Version PackageVersion { get; } = new(0, 1, 0);
+    public static global::System.Version PackageVersion { get; } = new(0, 1, 0);
 
     /// <summary>Gets the compile-time Daml type descriptor.</summary>
-    public static DamlTypeDescriptor DamlTypeId { get; } = new(TemplateId, DamlTypeKind.Template, PackageName);
+    public static global::Daml.Runtime.Contracts.DamlTypeDescriptor DamlTypeId { get; } = new(TemplateId, global::Daml.Runtime.Contracts.DamlTypeKind.Template, PackageName);
 
     /// <summary>Gets the witness pairing this template with its contract key type and carrying the key codec; passing it to a generic method infers both type parameters from one argument.</summary>
-    public static KeyDescriptor<Instrument, Tuple2<Party, string>> Key { get; } =
+    public static global::Daml.Runtime.Contracts.KeyDescriptor<Instrument, global::Daml.Runtime.Stdlib.Tuple2<global::Daml.Runtime.Data.Party, string>> Key { get; } =
         new()
         {
-            KeyEncoder = key => key.ToRecord(__t0 => (DamlValue)(__t0.ToDamlValue()), __t1 => (DamlValue)(new DamlText(__t1))),
-            KeyDecoder = value => Tuple2<Party, string>.FromRecord(value.As<DamlRecord>(), __v0 => Party.FromDamlValue(__v0.As<DamlParty>()), __v1 => __v1.As<DamlText>().Value),
-            KeyJsonReader = (json, context) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadTuple2(json, context, (__json0, __ctx0) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(__json0, __ctx0), (__json0, __ctx0) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadText(__json0, __ctx0)),
+            KeyEncoder = key => key.ToRecord(__t0 => (global::Daml.Runtime.Data.DamlValue)(__t0.ToDamlValue()), __t1 => (global::Daml.Runtime.Data.DamlValue)(new global::Daml.Runtime.Data.DamlText(__t1))),
+            KeyDecoder = value => global::Daml.Runtime.Stdlib.Tuple2<global::Daml.Runtime.Data.Party, string>.FromRecord(value.As<global::Daml.Runtime.Data.DamlRecord>(), __v0 => global::Daml.Runtime.Data.Party.FromDamlValue(__v0.As<global::Daml.Runtime.Data.DamlParty>()), null, __v1 => __v1.As<global::Daml.Runtime.Data.DamlText>().Value, null),
+            KeyJsonReader = (json, context) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadTuple2(json, context, (__json0, __ctx0) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(__json0, __ctx0), null, (__json0, __ctx0) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadText(__json0, __ctx0), null),
         };
 
     /// <summary>Converts this value to a DamlRecord.</summary>
-    public DamlRecord ToRecord() => DamlRecord.Create(
-        DamlField.Create("issuer", Issuer.ToDamlValue()),
-        DamlField.Create("name", new DamlText(Name))
+    public global::Daml.Runtime.Data.DamlRecord ToRecord() => global::Daml.Runtime.Data.DamlRecord.Create(
+        global::Daml.Runtime.Data.DamlField.Create("issuer", Issuer.ToDamlValue()),
+        global::Daml.Runtime.Data.DamlField.Create("name", new global::Daml.Runtime.Data.DamlText(Name))
     );
 
     /// <summary>Creates an instance from a DamlRecord.</summary>
-    public static Instrument FromRecord(DamlRecord record) => new Instrument(
-        Issuer: Party.FromDamlValue(record.GetRequiredField("issuer").As<DamlParty>()),
-        Name: record.GetRequiredField("name").As<DamlText>().Value
+    public static Instrument FromRecord(global::Daml.Runtime.Data.DamlRecord record) => new Instrument(
+        Issuer: global::Daml.Runtime.Data.Party.FromDamlValue(record.GetRequiredField("issuer").As<global::Daml.Runtime.Data.DamlParty>()),
+        Name: record.GetRequiredField("name").As<global::Daml.Runtime.Data.DamlText>().Value
     );
 
     /// <summary>Decodes a Daml-LF JSON record directly into a DamlRecord, without going through reflection.</summary>
     [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-    public static DamlRecord __ReadDamlLfJson(global::System.Text.Json.JsonElement json, global::Daml.Runtime.Serialization.DamlLfJsonDecodeContext context)
+    public static global::Daml.Runtime.Data.DamlRecord __ReadDamlLfJson(global::System.Text.Json.JsonElement json, global::Daml.Runtime.Serialization.DamlLfJsonDecodeContext context)
     {
         global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireObject(json, context);
-        return DamlRecord.Create(
-            DamlField.Create("issuer", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "issuer"), context.Field("issuer"))),
-            DamlField.Create("name", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadText(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "name"), context.Field("name")))
+        return global::Daml.Runtime.Data.DamlRecord.Create(
+            global::Daml.Runtime.Data.DamlField.Create("issuer", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "issuer"), context.Field("issuer"))),
+            global::Daml.Runtime.Data.DamlField.Create("name", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadText(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "name"), context.Field("name")))
         );
     }
 
@@ -78,17 +78,17 @@ public sealed partial record Instrument(
     /// Exercise the Archive choice.
     /// This choice is consuming and will archive the contract.
     /// </summary>
-    public static Choice<Instrument, DamlUnit, DamlUnit> ChoiceArchive { get; } = new()
+    public static global::Daml.Runtime.Commands.Choice<Instrument, global::Daml.Runtime.Data.DamlUnit, global::Daml.Runtime.Data.DamlUnit> ChoiceArchive { get; } = new()
     {
-        Name = new ChoiceName("Archive"),
+        Name = new global::Daml.Runtime.Commands.ChoiceName("Archive"),
         Consuming = true,
-        ArgumentEncoder = _ => DamlRecord.Create(),
-        ArgumentDecoder = val => val is DamlRecord { Fields.Count: 0 } ? DamlUnit.Instance : throw new global::System.InvalidOperationException("Choice 'Archive' argument must decode to an empty record."),
-        ResultDecoder = _ => DamlUnit.Instance,
+        ArgumentEncoder = _ => global::Daml.Runtime.Data.DamlRecord.Create(),
+        ArgumentDecoder = val => val is global::Daml.Runtime.Data.DamlRecord { Fields.Count: 0 } ? global::Daml.Runtime.Data.DamlUnit.Instance : throw new global::System.InvalidOperationException("Choice 'Archive' argument must decode to an empty record."),
+        ResultDecoder = _ => global::Daml.Runtime.Data.DamlUnit.Instance,
         ArgumentJsonReader = (json, context) =>
         {
             global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireObject(json, context);
-            return DamlRecord.Create();
+            return global::Daml.Runtime.Data.DamlRecord.Create();
         },
         ResultJsonReader = (json, context) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadUnit(json, context),
     };
@@ -96,33 +96,33 @@ public sealed partial record Instrument(
     /// <summary>
     /// Exercise the Mint choice.
     /// </summary>
-    public static Choice<Instrument, Mint, ContractId<Asset>> ChoiceMint { get; } = new()
+    public static global::Daml.Runtime.Commands.Choice<Instrument, Mint, global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Asset>> ChoiceMint { get; } = new()
     {
-        Name = new ChoiceName("Mint"),
+        Name = new global::Daml.Runtime.Commands.ChoiceName("Mint"),
         Consuming = false,
         ArgumentEncoder = arg => arg.ToRecord(),
-        ArgumentDecoder = val => Mint.FromRecord(val.As<DamlRecord>()),
-        ResultDecoder = val => new ContractId<Asset>(val.As<DamlContractId>().Value),
-        ArgumentJsonReader = (json, context) => Instrument.Mint.__ReadDamlLfJson(json, context),
+        ArgumentDecoder = val => Mint.FromRecord(val.As<global::Daml.Runtime.Data.DamlRecord>()),
+        ResultDecoder = val => new global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Asset>(val.As<global::Daml.Runtime.Contracts.DamlContractId>().Value),
+        ArgumentJsonReader = (json, context) => global::MiniDemo.Asset.Instrument.Mint.__ReadDamlLfJson(json, context),
         ResultJsonReader = (json, context) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadContractId(json, context),
     };
 
     /// <summary>
     /// Exercise the TotalSupply choice.
     /// </summary>
-    public static Choice<Instrument, TotalSupply, decimal> ChoiceTotalSupply { get; } = new()
+    public static global::Daml.Runtime.Commands.Choice<Instrument, TotalSupply, decimal> ChoiceTotalSupply { get; } = new()
     {
-        Name = new ChoiceName("TotalSupply"),
+        Name = new global::Daml.Runtime.Commands.ChoiceName("TotalSupply"),
         Consuming = false,
         ArgumentEncoder = arg => arg.ToRecord(),
-        ArgumentDecoder = val => TotalSupply.FromRecord(val.As<DamlRecord>()),
-        ResultDecoder = val => val.As<DamlNumeric>().Value,
-        ArgumentJsonReader = (json, context) => Instrument.TotalSupply.__ReadDamlLfJson(json, context),
+        ArgumentDecoder = val => TotalSupply.FromRecord(val.As<global::Daml.Runtime.Data.DamlRecord>()),
+        ResultDecoder = val => val.As<global::Daml.Runtime.Data.DamlNumeric>().Value,
+        ArgumentJsonReader = (json, context) => global::MiniDemo.Asset.Instrument.TotalSupply.__ReadDamlLfJson(json, context),
         ResultJsonReader = (json, context) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadNumeric(json, context),
     };
 
     /// <summary>Gets the choice descriptors declared by this type.</summary>
-    public static IReadOnlyList<IChoice> Choices { get; } = [ChoiceArchive, ChoiceMint, ChoiceTotalSupply];
+    public static global::System.Collections.Generic.IReadOnlyList<global::Daml.Runtime.Commands.IChoice> Choices { get; } = [ChoiceArchive, ChoiceMint, ChoiceTotalSupply];
 
     /// <summary>
     /// Builds the <see cref="global::Daml.Runtime.Commands.ExerciseByKeyCommand"/> for the Archive choice on the contract carrying this key.
@@ -133,15 +133,15 @@ public sealed partial record Instrument(
     /// the ledger resolves this command against a first match by an order it only partly
     /// guarantees. Keeping a key unique is the application's responsibility.
     /// </remarks>
-    public static ExerciseByKeyCommand ArchiveByKeyCommand(
-        Tuple2<Party, string> key)
+    public static global::Daml.Runtime.Commands.ExerciseByKeyCommand ArchiveByKeyCommand(
+        global::Daml.Runtime.Stdlib.Tuple2<global::Daml.Runtime.Data.Party, string> key)
     {
-        ArgumentNullException.ThrowIfNull(key);
-        return new ExerciseByKeyCommand(
-            Instrument.TemplateId,
-            key.ToRecord(__t0 => (DamlValue)(__t0.ToDamlValue()), __t1 => (DamlValue)(new DamlText(__t1))),
-            new ChoiceName("Archive"),
-            DamlRecord.Create());
+        global::System.ArgumentNullException.ThrowIfNull(key);
+        return new global::Daml.Runtime.Commands.ExerciseByKeyCommand(
+            global::MiniDemo.Asset.Instrument.TemplateId,
+            key.ToRecord(__t0 => (global::Daml.Runtime.Data.DamlValue)(__t0.ToDamlValue()), __t1 => (global::Daml.Runtime.Data.DamlValue)(new global::Daml.Runtime.Data.DamlText(__t1))),
+            new global::Daml.Runtime.Commands.ChoiceName("Archive"),
+            global::Daml.Runtime.Data.DamlRecord.Create());
     }
 
     /// <summary>
@@ -154,16 +154,16 @@ public sealed partial record Instrument(
     /// the ledger resolves this command against a first match by an order it only partly
     /// guarantees. Keeping a key unique is the application's responsibility.
     /// </remarks>
-    public static ExerciseByKeyCommand MintByKeyCommand(
-        Tuple2<Party, string> key,
-        Instrument.Mint argument)
+    public static global::Daml.Runtime.Commands.ExerciseByKeyCommand MintByKeyCommand(
+        global::Daml.Runtime.Stdlib.Tuple2<global::Daml.Runtime.Data.Party, string> key,
+        global::MiniDemo.Asset.Instrument.Mint argument)
     {
-        ArgumentNullException.ThrowIfNull(key);
-        ArgumentNullException.ThrowIfNull(argument);
-        return new ExerciseByKeyCommand(
-            Instrument.TemplateId,
-            key.ToRecord(__t0 => (DamlValue)(__t0.ToDamlValue()), __t1 => (DamlValue)(new DamlText(__t1))),
-            new ChoiceName("Mint"),
+        global::System.ArgumentNullException.ThrowIfNull(key);
+        global::System.ArgumentNullException.ThrowIfNull(argument);
+        return new global::Daml.Runtime.Commands.ExerciseByKeyCommand(
+            global::MiniDemo.Asset.Instrument.TemplateId,
+            key.ToRecord(__t0 => (global::Daml.Runtime.Data.DamlValue)(__t0.ToDamlValue()), __t1 => (global::Daml.Runtime.Data.DamlValue)(new global::Daml.Runtime.Data.DamlText(__t1))),
+            new global::Daml.Runtime.Commands.ChoiceName("Mint"),
             argument.ToRecord());
     }
 
@@ -177,84 +177,24 @@ public sealed partial record Instrument(
     /// the ledger resolves this command against a first match by an order it only partly
     /// guarantees. Keeping a key unique is the application's responsibility.
     /// </remarks>
-    public static ExerciseByKeyCommand TotalSupplyByKeyCommand(
-        Tuple2<Party, string> key,
-        Instrument.TotalSupply argument)
+    public static global::Daml.Runtime.Commands.ExerciseByKeyCommand TotalSupplyByKeyCommand(
+        global::Daml.Runtime.Stdlib.Tuple2<global::Daml.Runtime.Data.Party, string> key,
+        global::MiniDemo.Asset.Instrument.TotalSupply argument)
     {
-        ArgumentNullException.ThrowIfNull(key);
-        ArgumentNullException.ThrowIfNull(argument);
-        return new ExerciseByKeyCommand(
-            Instrument.TemplateId,
-            key.ToRecord(__t0 => (DamlValue)(__t0.ToDamlValue()), __t1 => (DamlValue)(new DamlText(__t1))),
-            new ChoiceName("TotalSupply"),
+        global::System.ArgumentNullException.ThrowIfNull(key);
+        global::System.ArgumentNullException.ThrowIfNull(argument);
+        return new global::Daml.Runtime.Commands.ExerciseByKeyCommand(
+            global::MiniDemo.Asset.Instrument.TemplateId,
+            key.ToRecord(__t0 => (global::Daml.Runtime.Data.DamlValue)(__t0.ToDamlValue()), __t1 => (global::Daml.Runtime.Data.DamlValue)(new global::Daml.Runtime.Data.DamlText(__t1))),
+            new global::Daml.Runtime.Commands.ChoiceName("TotalSupply"),
             argument.ToRecord());
     }
 
 }
 
-/// <summary>
-/// Typed projection of the contracts created by the Mint choice.
-/// One field per template the choice creates; cardinality follows the choice's
-/// return type (single, optional, list).
-/// </summary>
-public sealed record MintResult(
-    ContractId<Asset> Asset
-)
-{
-    /// <summary>
-    /// Projects an upstream transaction's created contracts to a typed <see cref="MintResult"/>.
-    /// Returns:
-    /// <list type="bullet">
-    ///   <item><see cref="ExerciseOutcome{T}.One"/> when every expected template's cardinality matches.</item>
-    ///   <item><see cref="ExerciseOutcome{T}.None"/> when at least one required slot's template is missing from the transaction.</item>
-    ///   <item><see cref="ExerciseOutcome{T}.Many"/> when a single-cardinality slot has more than one created contract of its template, or an optional-cardinality slot has more than one.</item>
-    /// </list>
-    /// Cardinality is matched by template ID's <c>(module, entity)</c> pair only — package upgrades that share the same logical template name match cleanly.
-    /// </summary>
-    public static ExerciseOutcome<MintResult> FromCreatedContracts(IEnumerable<CreatedContract> created)
-    {
-        ArgumentNullException.ThrowIfNull(created);
-        var templateMatches0 = new List<string>();
-        foreach (var item in created)
-        {
-            if (string.Equals(item.TemplateId.ModuleName, global::MiniDemo.Asset.Asset.TemplateId.ModuleName, StringComparison.Ordinal)
-                && string.Equals(item.TemplateId.EntityName, global::MiniDemo.Asset.Asset.TemplateId.EntityName, StringComparison.Ordinal))
-            {
-                templateMatches0.Add(item.ContractId);
-            }
-        }
-        var matches0 = new List<string>();
-        var templateMatchIndex0 = 0;
-        if (templateMatchIndex0 < templateMatches0.Count)
-        {
-            matches0.Add(templateMatches0[templateMatchIndex0]);
-            templateMatchIndex0++;
-        }
-        while (templateMatchIndex0 < templateMatches0.Count)
-        {
-            matches0.Add(templateMatches0[templateMatchIndex0]);
-            templateMatchIndex0++;
-        }
-
-        if (matches0.Count == 0)
-        {
-            return new ExerciseOutcome<MintResult>.None();
-        }
-        if (matches0.Count > 1)
-        {
-            return new ExerciseOutcome<MintResult>.Many(EquatableArray.Create(matches0));
-        }
-
-        return new ExerciseOutcome<MintResult>.One(new MintResult(
-            Asset: new ContractId<global::MiniDemo.Asset.Asset>(matches0[0])
-        ));
-    }
-
-}
-
 
 /// <summary>
-/// Static <c>Try&lt;Choice&gt;Async</c> extension methods for <see cref="Instrument"/>.
+/// Static <c>Try&lt;Choice&gt;Async</c> extension methods for <see cref="global::MiniDemo.Asset.Instrument"/>.
 /// One method per create-bearing choice; each delegates to
 /// <see cref="global::Daml.Ledger.Abstractions.Extensions.SingleCommandExtensions.TrySubmitSingleAsync"/>
 /// and projects success from the choice's own exercise result.
@@ -266,21 +206,21 @@ public static class InstrumentExtensions
     /// </summary>
     /// <param name="contractId">The contract on which to exercise the choice.</param>
     /// <param name="argument">The choice argument.</param>
-    public static ExerciseCommand MintCommand(
-        this ContractId<Instrument> contractId,
-        Instrument.Mint argument)
+    public static global::Daml.Runtime.Commands.ExerciseCommand MintCommand(
+        this global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Instrument> contractId,
+        global::MiniDemo.Asset.Instrument.Mint argument)
     {
-        ArgumentNullException.ThrowIfNull(contractId);
-        ArgumentNullException.ThrowIfNull(argument);
-        return new ExerciseCommand(
-            Instrument.TemplateId,
+        global::System.ArgumentNullException.ThrowIfNull(contractId);
+        global::System.ArgumentNullException.ThrowIfNull(argument);
+        return new global::Daml.Runtime.Commands.ExerciseCommand(
+            global::MiniDemo.Asset.Instrument.TemplateId,
             contractId,
-            new ChoiceName("Mint"),
+            new global::Daml.Runtime.Commands.ChoiceName("Mint"),
             argument.ToRecord());
     }
 
     /// <summary>
-    /// Exercises the Mint choice and projects the choice's exercise result to a typed <see cref="MintResult"/>.
+    /// Exercises the Mint choice and lifts the choice's exercise result to <see cref="ExerciseOutcome{T}"/> over <c>global::Daml.Runtime.Contracts.ContractId&lt;global::MiniDemo.Asset.Asset&gt;</c>.
     /// One <c>Party</c> parameter is emitted per Daml controller (declaration order).
     /// The wrapper builds a <see cref="SubmitterInfo"/> from those parties before
     /// dispatching to <c>ILedgerWriter</c>.
@@ -294,20 +234,20 @@ public static class InstrumentExtensions
     /// <param name="timeout">Optional per-call deadline, applied best-effort by the transport; transports without a server-side deadline apply a client-side bound only. The default <c>null</c> applies no deadline. An overrun surfaces as an <c>InfraError</c> outcome.</param>
     /// <param name="configure">Optional hook that receives the submission built for this call and returns the one to submit, so a caller can add what this helper does not expose: <c>s => s.WithDisclosedContracts(holding.Disclosure!)</c>, <c>WithDeduplicationPeriod</c>, <c>WithSynchronizerId</c> or <c>WithMinLedgerTime</c>. It runs after <c>workflowId</c> and <c>commandId</c> are applied. It must keep the helper's command, and the submitter's act-as and read-as parties replace any set on the submission. The default <c>null</c> submits the submission unchanged.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public static Task<ExerciseOutcome<MintResult>> TryMintAsync(
-        this ContractId<Instrument> contractId,
-        ILedgerWriter client,
-        Instrument.Mint argument,
-        Party issuer,
+    public static global::System.Threading.Tasks.Task<global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Asset>>> TryMintAsync(
+        this global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Instrument> contractId,
+        global::Daml.Ledger.Abstractions.ILedgerWriter client,
+        global::MiniDemo.Asset.Instrument.Mint argument,
+        global::Daml.Runtime.Data.Party issuer,
         string? workflowId = null,
-        CommandId? commandId = null,
-        TimeSpan? timeout = null,
-        Func<CommandsSubmission, CommandsSubmission>? configure = null,
-        CancellationToken cancellationToken = default)
+        global::Daml.Runtime.Commands.CommandId? commandId = null,
+        global::System.TimeSpan? timeout = null,
+        global::System.Func<global::Daml.Runtime.Commands.CommandsSubmission, global::Daml.Runtime.Commands.CommandsSubmission>? configure = null,
+        global::System.Threading.CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(client);
+        global::System.ArgumentNullException.ThrowIfNull(client);
 
-        SubmitterInfo submitter = issuer;
+        global::Daml.Runtime.Commands.SubmitterInfo submitter = issuer;
 
         return contractId.TryMintAsync(
             client,
@@ -321,7 +261,7 @@ public static class InstrumentExtensions
     }
 
     /// <summary>
-    /// Exercises the Mint choice with an explicit <see cref="SubmitterInfo"/> and projects the choice's exercise result to a typed <see cref="MintResult"/>.
+    /// Exercises the Mint choice with an explicit <see cref="SubmitterInfo"/> and lifts the choice's exercise result to <see cref="ExerciseOutcome{T}"/> over <c>global::Daml.Runtime.Contracts.ContractId&lt;global::MiniDemo.Asset.Asset&gt;</c>.
     /// Companion to the named-<c>Party</c> overload for the case where the submitter must
     /// read contracts it does not act as — the choice's created contracts are visible to an
     /// observer but not to the submitter, so the caller supplies the <c>readAs</c> parties.
@@ -335,18 +275,18 @@ public static class InstrumentExtensions
     /// <param name="timeout">Optional per-call deadline, applied best-effort by the transport; transports without a server-side deadline apply a client-side bound only. The default <c>null</c> applies no deadline. An overrun surfaces as an <c>InfraError</c> outcome.</param>
     /// <param name="configure">Optional hook that receives the submission built for this call and returns the one to submit, so a caller can add what this helper does not expose: <c>s => s.WithDisclosedContracts(holding.Disclosure!)</c>, <c>WithDeduplicationPeriod</c>, <c>WithSynchronizerId</c> or <c>WithMinLedgerTime</c>. It runs after <c>workflowId</c> and <c>commandId</c> are applied. It must keep the helper's command, and the submitter's act-as and read-as parties replace any set on the submission. The default <c>null</c> submits the submission unchanged.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public static async Task<ExerciseOutcome<MintResult>> TryMintAsync(
-        this ContractId<Instrument> contractId,
-        ILedgerWriter client,
-        Instrument.Mint argument,
-        SubmitterInfo submitter,
+    public static async global::System.Threading.Tasks.Task<global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Asset>>> TryMintAsync(
+        this global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Instrument> contractId,
+        global::Daml.Ledger.Abstractions.ILedgerWriter client,
+        global::MiniDemo.Asset.Instrument.Mint argument,
+        global::Daml.Runtime.Commands.SubmitterInfo submitter,
         string? workflowId = null,
-        CommandId? commandId = null,
-        TimeSpan? timeout = null,
-        Func<CommandsSubmission, CommandsSubmission>? configure = null,
-        CancellationToken cancellationToken = default)
+        global::Daml.Runtime.Commands.CommandId? commandId = null,
+        global::System.TimeSpan? timeout = null,
+        global::System.Func<global::Daml.Runtime.Commands.CommandsSubmission, global::Daml.Runtime.Commands.CommandsSubmission>? configure = null,
+        global::System.Threading.CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(client);
+        global::System.ArgumentNullException.ThrowIfNull(client);
 
         var command = contractId.MintCommand(argument);
 
@@ -356,10 +296,10 @@ public static class InstrumentExtensions
     }
 
     /// <summary>
-    /// Exercises the Mint choice on a fetched <see cref="Instrument"/> contract,
+    /// Exercises the Mint choice on a fetched <see cref="global::MiniDemo.Asset.Instrument"/> contract,
     /// reading every controller and observer party off the contract payload so the
     /// caller passes no parties. Delegates to the
-    /// <c>ContractId&lt;Instrument&gt;</c> overload.
+    /// <c>ContractId&lt;global::MiniDemo.Asset.Instrument&gt;</c> overload.
     /// </summary>
     /// <param name="contract">The fetched contract on which to exercise the choice.</param>
     /// <param name="client">The ledger client.</param>
@@ -369,19 +309,19 @@ public static class InstrumentExtensions
     /// <param name="timeout">Optional per-call deadline, applied best-effort by the transport; transports without a server-side deadline apply a client-side bound only. The default <c>null</c> applies no deadline. An overrun surfaces as an <c>InfraError</c> outcome.</param>
     /// <param name="configure">Optional hook that receives the submission built for this call and returns the one to submit, so a caller can add what this helper does not expose: <c>s => s.WithDisclosedContracts(holding.Disclosure!)</c>, <c>WithDeduplicationPeriod</c>, <c>WithSynchronizerId</c> or <c>WithMinLedgerTime</c>. It runs after <c>workflowId</c> and <c>commandId</c> are applied. It must keep the helper's command, and the submitter's act-as and read-as parties replace any set on the submission. The default <c>null</c> submits the submission unchanged.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public static Task<ExerciseOutcome<MintResult>> TryMintAsync(
-        this IContract<ContractId<Instrument>, Instrument> contract,
-        ILedgerWriter client,
-        Instrument.Mint argument,
+    public static global::System.Threading.Tasks.Task<global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Asset>>> TryMintAsync(
+        this global::Daml.Runtime.Contracts.IContract<global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Instrument>, global::MiniDemo.Asset.Instrument> contract,
+        global::Daml.Ledger.Abstractions.ILedgerWriter client,
+        global::MiniDemo.Asset.Instrument.Mint argument,
         string? workflowId = null,
-        CommandId? commandId = null,
-        TimeSpan? timeout = null,
-        Func<CommandsSubmission, CommandsSubmission>? configure = null,
-        CancellationToken cancellationToken = default)
+        global::Daml.Runtime.Commands.CommandId? commandId = null,
+        global::System.TimeSpan? timeout = null,
+        global::System.Func<global::Daml.Runtime.Commands.CommandsSubmission, global::Daml.Runtime.Commands.CommandsSubmission>? configure = null,
+        global::System.Threading.CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(contract);
-        ArgumentNullException.ThrowIfNull(client);
-        ArgumentNullException.ThrowIfNull(argument);
+        global::System.ArgumentNullException.ThrowIfNull(contract);
+        global::System.ArgumentNullException.ThrowIfNull(client);
+        global::System.ArgumentNullException.ThrowIfNull(argument);
 
         return contract.Id.TryMintAsync(
             client,
@@ -395,11 +335,11 @@ public static class InstrumentExtensions
     }
 
     /// <summary>
-    /// Exercises the Mint choice on a fetched <see cref="Instrument"/> contract with an
+    /// Exercises the Mint choice on a fetched <see cref="global::MiniDemo.Asset.Instrument"/> contract with an
     /// explicit <see cref="SubmitterInfo"/>. Companion to the payload-derived overload for
     /// multi-party submissions and for callers who must supply <c>readAs</c> parties the
     /// payload cannot name. Delegates to the
-    /// <c>ContractId&lt;Instrument&gt;</c> overload.
+    /// <c>ContractId&lt;global::MiniDemo.Asset.Instrument&gt;</c> overload.
     /// </summary>
     /// <param name="contract">The fetched contract on which to exercise the choice.</param>
     /// <param name="client">The ledger client.</param>
@@ -410,20 +350,20 @@ public static class InstrumentExtensions
     /// <param name="timeout">Optional per-call deadline, applied best-effort by the transport; transports without a server-side deadline apply a client-side bound only. The default <c>null</c> applies no deadline. An overrun surfaces as an <c>InfraError</c> outcome.</param>
     /// <param name="configure">Optional hook that receives the submission built for this call and returns the one to submit, so a caller can add what this helper does not expose: <c>s => s.WithDisclosedContracts(holding.Disclosure!)</c>, <c>WithDeduplicationPeriod</c>, <c>WithSynchronizerId</c> or <c>WithMinLedgerTime</c>. It runs after <c>workflowId</c> and <c>commandId</c> are applied. It must keep the helper's command, and the submitter's act-as and read-as parties replace any set on the submission. The default <c>null</c> submits the submission unchanged.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public static Task<ExerciseOutcome<MintResult>> TryMintAsync(
-        this IContract<ContractId<Instrument>, Instrument> contract,
-        ILedgerWriter client,
-        Instrument.Mint argument,
-        SubmitterInfo submitter,
+    public static global::System.Threading.Tasks.Task<global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Asset>>> TryMintAsync(
+        this global::Daml.Runtime.Contracts.IContract<global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Instrument>, global::MiniDemo.Asset.Instrument> contract,
+        global::Daml.Ledger.Abstractions.ILedgerWriter client,
+        global::MiniDemo.Asset.Instrument.Mint argument,
+        global::Daml.Runtime.Commands.SubmitterInfo submitter,
         string? workflowId = null,
-        CommandId? commandId = null,
-        TimeSpan? timeout = null,
-        Func<CommandsSubmission, CommandsSubmission>? configure = null,
-        CancellationToken cancellationToken = default)
+        global::Daml.Runtime.Commands.CommandId? commandId = null,
+        global::System.TimeSpan? timeout = null,
+        global::System.Func<global::Daml.Runtime.Commands.CommandsSubmission, global::Daml.Runtime.Commands.CommandsSubmission>? configure = null,
+        global::System.Threading.CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(contract);
-        ArgumentNullException.ThrowIfNull(client);
-        ArgumentNullException.ThrowIfNull(argument);
+        global::System.ArgumentNullException.ThrowIfNull(contract);
+        global::System.ArgumentNullException.ThrowIfNull(client);
+        global::System.ArgumentNullException.ThrowIfNull(argument);
 
         return contract.Id.TryMintAsync(
             client,
@@ -436,53 +376,8 @@ public static class InstrumentExtensions
             cancellationToken);
     }
 
-    private static ExerciseOutcome<MintResult> ProjectMintResult(TransactionResult tx, string contractId)
-    {
-        var fromCreatedContracts = MintResult.FromCreatedContracts(tx.CreatedContracts);
-        if (fromCreatedContracts is ExerciseOutcome<MintResult>.Many)
-        {
-            return fromCreatedContracts;
-        }
-
-        foreach (var exercised in tx.ExercisedEvents)
-        {
-            if (string.Equals(exercised.ContractId, contractId, StringComparison.Ordinal)
-                && string.Equals(exercised.TemplateId.ModuleName, Instrument.TemplateId.ModuleName, StringComparison.Ordinal)
-                && string.Equals(exercised.TemplateId.EntityName, Instrument.TemplateId.EntityName, StringComparison.Ordinal)
-                && string.Equals(exercised.ChoiceName.Value, "Mint", StringComparison.Ordinal))
-            {
-                try
-                {
-                    return DecodeMintResult(exercised.ExerciseResult);
-                }
-                catch (global::System.Exception ex) when (ex is not global::System.OperationCanceledException)
-                {
-                    return new ExerciseOutcome<MintResult>.CommittedUndecodable(tx.UpdateId, ex.Message, ex);
-                }
-            }
-        }
-
-        return fromCreatedContracts;
-    }
-
-    private static ExerciseOutcome<MintResult> DecodeMintResult(DamlValue exerciseResult)
-    {
-        var matches0 = new List<string>();
-        matches0.Add(exerciseResult.As<DamlContractId>().Value);
-
-        if (matches0.Count == 0)
-        {
-            return new ExerciseOutcome<MintResult>.None();
-        }
-        if (matches0.Count > 1)
-        {
-            return new ExerciseOutcome<MintResult>.Many(EquatableArray.Create(matches0));
-        }
-
-        return new ExerciseOutcome<MintResult>.One(new MintResult(
-            Asset: new ContractId<global::MiniDemo.Asset.Asset>(matches0[0])
-        ));
-    }
+    private static global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Asset>> ProjectMintResult(global::Daml.Runtime.Contracts.TransactionResult tx, string contractId) =>
+        tx.ProjectChoiceResult(global::MiniDemo.Asset.Instrument.ChoiceMint, contractId);
 }
 
 /// <summary>
@@ -506,23 +401,23 @@ public static class InstrumentSubmissionExtensions
     /// <param name="payload">The contract payload.</param>
     /// <param name="configure">Optional hook that receives the submission built for this call and returns the one to submit, so a caller can add what this helper does not expose: <c>s => s.WithDisclosedContracts(holding.Disclosure!)</c>, <c>WithDeduplicationPeriod</c>, <c>WithSynchronizerId</c> or <c>WithMinLedgerTime</c>. It must keep the helper's command, and the submitter's act-as and read-as parties replace any set on the submission. The default <c>null</c> submits the submission unchanged.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public static Task<ExerciseOutcome<ContractId<Instrument>>> TryCreateAsync(
-        this ILedgerWriter client,
+    public static global::System.Threading.Tasks.Task<global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Contracts.ContractId<Instrument>>> TryCreateAsync(
+        this global::Daml.Ledger.Abstractions.ILedgerWriter client,
         Instrument payload,
-        Func<CommandsSubmission, CommandsSubmission>? configure = null,
-        CancellationToken cancellationToken = default)
+        global::System.Func<global::Daml.Runtime.Commands.CommandsSubmission, global::Daml.Runtime.Commands.CommandsSubmission>? configure = null,
+        global::System.Threading.CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(client);
-        ArgumentNullException.ThrowIfNull(payload);
+        global::System.ArgumentNullException.ThrowIfNull(client);
+        global::System.ArgumentNullException.ThrowIfNull(payload);
 
-        SubmitterInfo submitter = payload.Issuer;
+        global::Daml.Runtime.Commands.SubmitterInfo submitter = payload.Issuer;
 
         return global::Daml.Ledger.Abstractions.Extensions.SingleCommandExtensions.TryCreateAsync<Instrument>(client, payload, submitter, configure: configure, cancellationToken: cancellationToken);
     }
 }
 
 /// <summary>
-/// Async exerciser extensions for <see cref="Instrument"/> contract IDs whose choices
+/// Async exerciser extensions for <see cref="global::MiniDemo.Asset.Instrument"/> contract IDs whose choices
 /// return a non-contract-id payload (Decimal, records, lists, Unit, etc.).
 /// Each method submits the choice via
 /// <c>SingleCommandExtensions.TrySubmitSingleAsync</c> and lifts the typed result
@@ -534,20 +429,20 @@ public static class InstrumentNonContractExtensions
     /// Builds the <see cref="global::Daml.Runtime.Commands.ExerciseCommand"/> for the Archive choice on this contract id.
     /// </summary>
     /// <param name="contractId">The contract on which to exercise the choice.</param>
-    public static ExerciseCommand ArchiveCommand(
-        this ContractId<Instrument> contractId)
+    public static global::Daml.Runtime.Commands.ExerciseCommand ArchiveCommand(
+        this global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Instrument> contractId)
     {
-        ArgumentNullException.ThrowIfNull(contractId);
-        return new ExerciseCommand(
-            Instrument.TemplateId,
+        global::System.ArgumentNullException.ThrowIfNull(contractId);
+        return new global::Daml.Runtime.Commands.ExerciseCommand(
+            global::MiniDemo.Asset.Instrument.TemplateId,
             contractId,
-            new ChoiceName("Archive"),
-            DamlRecord.Create());
+            new global::Daml.Runtime.Commands.ChoiceName("Archive"),
+            global::Daml.Runtime.Data.DamlRecord.Create());
     }
 
     /// <summary>
     /// Exercises the Archive choice and lifts the choice's exercise result to
-    /// <see cref="ExerciseOutcome{T}"/> over <c>DamlUnit</c>. Structured Canton/Daml errors
+    /// <see cref="ExerciseOutcome{T}"/> over <c>global::Daml.Runtime.Data.DamlUnit</c>. Structured Canton/Daml errors
     /// and infrastructure/transport errors pass through unchanged.
     /// </summary>
     /// <param name="contractId">The contract on which to exercise the choice.</param>
@@ -558,17 +453,17 @@ public static class InstrumentNonContractExtensions
     /// <param name="timeout">Optional per-call deadline, applied best-effort by the transport; transports without a server-side deadline apply a client-side bound only. The default <c>null</c> applies no deadline. An overrun surfaces as an <c>InfraError</c> outcome.</param>
     /// <param name="configure">Optional hook that receives the submission built for this call and returns the one to submit, so a caller can add what this helper does not expose: <c>s => s.WithDisclosedContracts(holding.Disclosure!)</c>, <c>WithDeduplicationPeriod</c>, <c>WithSynchronizerId</c> or <c>WithMinLedgerTime</c>. It runs after <c>workflowId</c> and <c>commandId</c> are applied. It must keep the helper's command, and the submitter's act-as and read-as parties replace any set on the submission. The default <c>null</c> submits the submission unchanged.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public static async Task<ExerciseOutcome<DamlUnit>> TryArchiveAsync(
-        this ContractId<Instrument> contractId,
-        ILedgerWriter client,
-        SubmitterInfo submitter,
+    public static async global::System.Threading.Tasks.Task<global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Data.DamlUnit>> TryArchiveAsync(
+        this global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Instrument> contractId,
+        global::Daml.Ledger.Abstractions.ILedgerWriter client,
+        global::Daml.Runtime.Commands.SubmitterInfo submitter,
         string? workflowId = null,
-        CommandId? commandId = null,
-        TimeSpan? timeout = null,
-        Func<CommandsSubmission, CommandsSubmission>? configure = null,
-        CancellationToken cancellationToken = default)
+        global::Daml.Runtime.Commands.CommandId? commandId = null,
+        global::System.TimeSpan? timeout = null,
+        global::System.Func<global::Daml.Runtime.Commands.CommandsSubmission, global::Daml.Runtime.Commands.CommandsSubmission>? configure = null,
+        global::System.Threading.CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(client);
+        global::System.ArgumentNullException.ThrowIfNull(client);
 
         var command = contractId.ArchiveCommand();
 
@@ -582,16 +477,16 @@ public static class InstrumentNonContractExtensions
     /// </summary>
     /// <param name="contractId">The contract on which to exercise the choice.</param>
     /// <param name="argument">The choice argument.</param>
-    public static ExerciseCommand TotalSupplyCommand(
-        this ContractId<Instrument> contractId,
-        Instrument.TotalSupply argument)
+    public static global::Daml.Runtime.Commands.ExerciseCommand TotalSupplyCommand(
+        this global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Instrument> contractId,
+        global::MiniDemo.Asset.Instrument.TotalSupply argument)
     {
-        ArgumentNullException.ThrowIfNull(contractId);
-        ArgumentNullException.ThrowIfNull(argument);
-        return new ExerciseCommand(
-            Instrument.TemplateId,
+        global::System.ArgumentNullException.ThrowIfNull(contractId);
+        global::System.ArgumentNullException.ThrowIfNull(argument);
+        return new global::Daml.Runtime.Commands.ExerciseCommand(
+            global::MiniDemo.Asset.Instrument.TemplateId,
             contractId,
-            new ChoiceName("TotalSupply"),
+            new global::Daml.Runtime.Commands.ChoiceName("TotalSupply"),
             argument.ToRecord());
     }
 
@@ -609,18 +504,18 @@ public static class InstrumentNonContractExtensions
     /// <param name="timeout">Optional per-call deadline, applied best-effort by the transport; transports without a server-side deadline apply a client-side bound only. The default <c>null</c> applies no deadline. An overrun surfaces as an <c>InfraError</c> outcome.</param>
     /// <param name="configure">Optional hook that receives the submission built for this call and returns the one to submit, so a caller can add what this helper does not expose: <c>s => s.WithDisclosedContracts(holding.Disclosure!)</c>, <c>WithDeduplicationPeriod</c>, <c>WithSynchronizerId</c> or <c>WithMinLedgerTime</c>. It runs after <c>workflowId</c> and <c>commandId</c> are applied. It must keep the helper's command, and the submitter's act-as and read-as parties replace any set on the submission. The default <c>null</c> submits the submission unchanged.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public static async Task<ExerciseOutcome<decimal>> TryTotalSupplyAsync(
-        this ContractId<Instrument> contractId,
-        ILedgerWriter client,
-        Instrument.TotalSupply argument,
-        SubmitterInfo submitter,
+    public static async global::System.Threading.Tasks.Task<global::Daml.Runtime.Outcomes.ExerciseOutcome<decimal>> TryTotalSupplyAsync(
+        this global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Instrument> contractId,
+        global::Daml.Ledger.Abstractions.ILedgerWriter client,
+        global::MiniDemo.Asset.Instrument.TotalSupply argument,
+        global::Daml.Runtime.Commands.SubmitterInfo submitter,
         string? workflowId = null,
-        CommandId? commandId = null,
-        TimeSpan? timeout = null,
-        Func<CommandsSubmission, CommandsSubmission>? configure = null,
-        CancellationToken cancellationToken = default)
+        global::Daml.Runtime.Commands.CommandId? commandId = null,
+        global::System.TimeSpan? timeout = null,
+        global::System.Func<global::Daml.Runtime.Commands.CommandsSubmission, global::Daml.Runtime.Commands.CommandsSubmission>? configure = null,
+        global::System.Threading.CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(client);
+        global::System.ArgumentNullException.ThrowIfNull(client);
 
         var command = contractId.TotalSupplyCommand(argument);
 
@@ -629,61 +524,9 @@ public static class InstrumentNonContractExtensions
         return outcome.ProjectCommitted(tx => ProjectTotalSupplyResult(tx, contractId.Value));
     }
 
-    private static ExerciseOutcome<DamlUnit> ProjectArchiveResult(TransactionResult tx, string contractId)
-    {
-        foreach (var exercised in tx.ExercisedEvents)
-        {
-            if (string.Equals(exercised.ContractId, contractId, StringComparison.Ordinal)
-                && string.Equals(exercised.TemplateId.ModuleName, Instrument.TemplateId.ModuleName, StringComparison.Ordinal)
-                && string.Equals(exercised.TemplateId.EntityName, Instrument.TemplateId.EntityName, StringComparison.Ordinal)
-                && string.Equals(exercised.ChoiceName.Value, "Archive", StringComparison.Ordinal))
-            {
-                try
-                {
-                    var decoded = Instrument.ChoiceArchive.ResultDecoder!(exercised.ExerciseResult);
-                    return new ExerciseOutcome<DamlUnit>.One(decoded);
-                }
-                catch (global::System.Exception ex) when (ex is not global::System.OperationCanceledException)
-                {
-                    return new ExerciseOutcome<DamlUnit>.CommittedUndecodable(tx.UpdateId, ex.Message, ex);
-                }
-            }
-        }
+    private static global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Data.DamlUnit> ProjectArchiveResult(global::Daml.Runtime.Contracts.TransactionResult tx, string contractId) =>
+        tx.ProjectChoiceResult(global::MiniDemo.Asset.Instrument.ChoiceArchive, contractId);
 
-        throw new InvalidOperationException(
-            $"Submission succeeded but no 'Archive' exercise on contract '{contractId}' was recorded on transaction {tx.UpdateId}. " +
-            "The transaction returned for this submission carries no exercised event for it. " +
-            "Either a custom ILedgerWriter did not project the transaction's exercised events into TransactionResult.ExercisedEvents, " +
-            "or the transaction was requested in a shape without exercised events (ACS_DELTA); " +
-            "request the LEDGER_EFFECTS shape with verbose events.");
-    }
-
-    private static ExerciseOutcome<decimal> ProjectTotalSupplyResult(TransactionResult tx, string contractId)
-    {
-        foreach (var exercised in tx.ExercisedEvents)
-        {
-            if (string.Equals(exercised.ContractId, contractId, StringComparison.Ordinal)
-                && string.Equals(exercised.TemplateId.ModuleName, Instrument.TemplateId.ModuleName, StringComparison.Ordinal)
-                && string.Equals(exercised.TemplateId.EntityName, Instrument.TemplateId.EntityName, StringComparison.Ordinal)
-                && string.Equals(exercised.ChoiceName.Value, "TotalSupply", StringComparison.Ordinal))
-            {
-                try
-                {
-                    var decoded = Instrument.ChoiceTotalSupply.ResultDecoder!(exercised.ExerciseResult);
-                    return new ExerciseOutcome<decimal>.One(decoded);
-                }
-                catch (global::System.Exception ex) when (ex is not global::System.OperationCanceledException)
-                {
-                    return new ExerciseOutcome<decimal>.CommittedUndecodable(tx.UpdateId, ex.Message, ex);
-                }
-            }
-        }
-
-        throw new InvalidOperationException(
-            $"Submission succeeded but no 'TotalSupply' exercise on contract '{contractId}' was recorded on transaction {tx.UpdateId}. " +
-            "The transaction returned for this submission carries no exercised event for it. " +
-            "Either a custom ILedgerWriter did not project the transaction's exercised events into TransactionResult.ExercisedEvents, " +
-            "or the transaction was requested in a shape without exercised events (ACS_DELTA); " +
-            "request the LEDGER_EFFECTS shape with verbose events.");
-    }
+    private static global::Daml.Runtime.Outcomes.ExerciseOutcome<decimal> ProjectTotalSupplyResult(global::Daml.Runtime.Contracts.TransactionResult tx, string contractId) =>
+        tx.ProjectChoiceResult(global::MiniDemo.Asset.Instrument.ChoiceTotalSupply, contractId);
 }

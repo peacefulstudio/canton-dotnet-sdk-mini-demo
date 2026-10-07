@@ -15,30 +15,30 @@ public sealed partial record Instrument
     /// Choice argument type for Mint.
     /// </summary>
     public sealed record Mint(
-        [property: DamlFieldAttribute("owner")] Party Owner,
-        [property: DamlFieldAttribute("amount")] decimal Amount
-    ) : IDamlRecord<Mint>
+        [property: global::Daml.Runtime.Data.DamlFieldAttribute("owner")] global::Daml.Runtime.Data.Party Owner,
+        [property: global::Daml.Runtime.Data.DamlFieldAttribute("amount")] decimal Amount
+    ) : global::Daml.Runtime.Data.IDamlRecord<Mint>
     {
         /// <summary>Converts this value to a DamlRecord.</summary>
-        public DamlRecord ToRecord() => DamlRecord.Create(
-            DamlField.Create("owner", Owner.ToDamlValue()),
-            DamlField.Create("amount", new DamlNumeric(Amount))
+        public global::Daml.Runtime.Data.DamlRecord ToRecord() => global::Daml.Runtime.Data.DamlRecord.Create(
+            global::Daml.Runtime.Data.DamlField.Create("owner", Owner.ToDamlValue()),
+            global::Daml.Runtime.Data.DamlField.Create("amount", new global::Daml.Runtime.Data.DamlNumeric(Amount))
         );
 
         /// <summary>Creates an instance from a DamlRecord.</summary>
-        public static Mint FromRecord(DamlRecord record) => new Mint(
-            Owner: Party.FromDamlValue(record.GetRequiredField("owner").As<DamlParty>()),
-            Amount: record.GetRequiredField("amount").As<DamlNumeric>().Value
+        public static Mint FromRecord(global::Daml.Runtime.Data.DamlRecord record) => new Mint(
+            Owner: global::Daml.Runtime.Data.Party.FromDamlValue(record.GetRequiredField("owner").As<global::Daml.Runtime.Data.DamlParty>()),
+            Amount: record.GetRequiredField("amount").As<global::Daml.Runtime.Data.DamlNumeric>().Value
         );
 
         /// <summary>Decodes a Daml-LF JSON record directly into a DamlRecord, without going through reflection.</summary>
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public static DamlRecord __ReadDamlLfJson(global::System.Text.Json.JsonElement json, global::Daml.Runtime.Serialization.DamlLfJsonDecodeContext context)
+        public static global::Daml.Runtime.Data.DamlRecord __ReadDamlLfJson(global::System.Text.Json.JsonElement json, global::Daml.Runtime.Serialization.DamlLfJsonDecodeContext context)
         {
             global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireObject(json, context);
-            return DamlRecord.Create(
-                DamlField.Create("owner", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "owner"), context.Field("owner"))),
-                DamlField.Create("amount", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadNumeric(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "amount"), context.Field("amount")))
+            return global::Daml.Runtime.Data.DamlRecord.Create(
+                global::Daml.Runtime.Data.DamlField.Create("owner", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "owner"), context.Field("owner"))),
+                global::Daml.Runtime.Data.DamlField.Create("amount", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadNumeric(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "amount"), context.Field("amount")))
             );
         }
 

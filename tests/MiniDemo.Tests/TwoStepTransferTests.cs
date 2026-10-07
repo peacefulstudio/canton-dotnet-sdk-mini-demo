@@ -118,7 +118,7 @@ public class TwoStepTransferTests
             client, Gold, Parties.Issuer, Parties.Alice, "alice", 42m, "gRPC", CancellationToken.None);
 
         (await act.Should().ThrowAsync<InvalidOperationException>())
-            .Which.Message.Should().Contain("MintByKeyAsync produced no expected contract");
+            .Which.Message.Should().Contain("no contracts of type Asset");
     }
 
     [Fact]

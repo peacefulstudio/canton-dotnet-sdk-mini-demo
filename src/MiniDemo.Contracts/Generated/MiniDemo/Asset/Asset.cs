@@ -23,15 +23,15 @@ namespace MiniDemo.Asset;
 /// Generated from Daml template MiniDemo.Asset:Asset
 /// </summary>
 public sealed partial record Asset(
-    [property: DamlFieldAttribute("issuer")] Party Issuer,
-    [property: DamlFieldAttribute("owner")] Party Owner,
-    [property: DamlFieldAttribute("name")] string Name,
-    [property: DamlFieldAttribute("amount")] decimal Amount,
-    [property: DamlFieldAttribute("lock")] global::Splice.Api.Token.HoldingV2.Lock? Lock
-) : ITemplate, IImplements<global::Splice.Api.Token.HoldingV2.IHolding>, IHasKey<Asset, Tuple2<Party, string>>, IHasChoices<Asset>, IDamlRecord<Asset>
+    [property: global::Daml.Runtime.Data.DamlFieldAttribute("issuer")] global::Daml.Runtime.Data.Party Issuer,
+    [property: global::Daml.Runtime.Data.DamlFieldAttribute("owner")] global::Daml.Runtime.Data.Party Owner,
+    [property: global::Daml.Runtime.Data.DamlFieldAttribute("name")] string Name,
+    [property: global::Daml.Runtime.Data.DamlFieldAttribute("amount")] decimal Amount,
+    [property: global::Daml.Runtime.Data.DamlFieldAttribute("lock")] global::Splice.Api.Token.HoldingV2.Lock? Lock
+) : global::Daml.Runtime.Contracts.ITemplate, global::Daml.Runtime.Contracts.IImplements<global::Splice.Api.Token.HoldingV2.IHolding>, global::Daml.Runtime.Contracts.IHasKey<Asset, global::Daml.Runtime.Stdlib.Tuple2<global::Daml.Runtime.Data.Party, string>>, global::Daml.Runtime.Contracts.IHasChoices<Asset>, global::Daml.Runtime.Data.IDamlRecord<Asset>
 {
     /// <summary>Gets the template identifier.</summary>
-    public static Identifier TemplateId { get; } = new("1c7a18f31befd3df5426c623abcbe71fcfe796665de0feefd09ce752ef7fa9fb", "MiniDemo.Asset", "Asset");
+    public static global::Daml.Runtime.Data.Identifier TemplateId { get; } = new("1c7a18f31befd3df5426c623abcbe71fcfe796665de0feefd09ce752ef7fa9fb", "MiniDemo.Asset", "Asset");
 
     /// <summary>Gets the package ID.</summary>
     public static string PackageId => "1c7a18f31befd3df5426c623abcbe71fcfe796665de0feefd09ce752ef7fa9fb";
@@ -40,73 +40,73 @@ public sealed partial record Asset(
     public static string PackageName => "canton-mini-demo-hbde402d4f83a";
 
     /// <summary>Gets the package version.</summary>
-    public static Version PackageVersion { get; } = new(0, 1, 0);
+    public static global::System.Version PackageVersion { get; } = new(0, 1, 0);
 
     /// <summary>Gets the compile-time Daml type descriptor.</summary>
-    public static DamlTypeDescriptor DamlTypeId { get; } = new(TemplateId, DamlTypeKind.Template, PackageName);
+    public static global::Daml.Runtime.Contracts.DamlTypeDescriptor DamlTypeId { get; } = new(TemplateId, global::Daml.Runtime.Contracts.DamlTypeKind.Template, PackageName);
 
     /// <summary>Gets the witness pairing this template with its contract key type and carrying the key codec; passing it to a generic method infers both type parameters from one argument.</summary>
-    public static KeyDescriptor<Asset, Tuple2<Party, string>> Key { get; } =
+    public static global::Daml.Runtime.Contracts.KeyDescriptor<Asset, global::Daml.Runtime.Stdlib.Tuple2<global::Daml.Runtime.Data.Party, string>> Key { get; } =
         new()
         {
-            KeyEncoder = key => key.ToRecord(__t0 => (DamlValue)(__t0.ToDamlValue()), __t1 => (DamlValue)(new DamlText(__t1))),
-            KeyDecoder = value => Tuple2<Party, string>.FromRecord(value.As<DamlRecord>(), __v0 => Party.FromDamlValue(__v0.As<DamlParty>()), __v1 => __v1.As<DamlText>().Value),
-            KeyJsonReader = (json, context) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadTuple2(json, context, (__json0, __ctx0) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(__json0, __ctx0), (__json0, __ctx0) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadText(__json0, __ctx0)),
+            KeyEncoder = key => key.ToRecord(__t0 => (global::Daml.Runtime.Data.DamlValue)(__t0.ToDamlValue()), __t1 => (global::Daml.Runtime.Data.DamlValue)(new global::Daml.Runtime.Data.DamlText(__t1))),
+            KeyDecoder = value => global::Daml.Runtime.Stdlib.Tuple2<global::Daml.Runtime.Data.Party, string>.FromRecord(value.As<global::Daml.Runtime.Data.DamlRecord>(), __v0 => global::Daml.Runtime.Data.Party.FromDamlValue(__v0.As<global::Daml.Runtime.Data.DamlParty>()), null, __v1 => __v1.As<global::Daml.Runtime.Data.DamlText>().Value, null),
+            KeyJsonReader = (json, context) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadTuple2(json, context, (__json0, __ctx0) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(__json0, __ctx0), null, (__json0, __ctx0) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadText(__json0, __ctx0), null),
         };
 
     /// <summary>Converts this value to a DamlRecord.</summary>
-    public DamlRecord ToRecord() => DamlRecord.Create(
-        DamlField.Create("issuer", Issuer.ToDamlValue()),
-        DamlField.Create("owner", Owner.ToDamlValue()),
-        DamlField.Create("name", new DamlText(Name)),
-        DamlField.Create("amount", new DamlNumeric(Amount)),
-        DamlField.Create("lock", Lock is { } __Lock ? new DamlOptional(__Lock.ToRecord()) : DamlOptional.None)
+    public global::Daml.Runtime.Data.DamlRecord ToRecord() => global::Daml.Runtime.Data.DamlRecord.Create(
+        global::Daml.Runtime.Data.DamlField.Create("issuer", Issuer.ToDamlValue()),
+        global::Daml.Runtime.Data.DamlField.Create("owner", Owner.ToDamlValue()),
+        global::Daml.Runtime.Data.DamlField.Create("name", new global::Daml.Runtime.Data.DamlText(Name)),
+        global::Daml.Runtime.Data.DamlField.Create("amount", new global::Daml.Runtime.Data.DamlNumeric(Amount)),
+        global::Daml.Runtime.Data.DamlField.Create("lock", Lock is { } __Lock ? new global::Daml.Runtime.Data.DamlOptional(__Lock.ToRecord()) : global::Daml.Runtime.Data.DamlOptional.None)
     );
 
     /// <summary>Creates an instance from a DamlRecord.</summary>
-    public static Asset FromRecord(DamlRecord record) => new Asset(
-        Issuer: Party.FromDamlValue(record.GetRequiredField("issuer").As<DamlParty>()),
-        Owner: Party.FromDamlValue(record.GetRequiredField("owner").As<DamlParty>()),
-        Name: record.GetRequiredField("name").As<DamlText>().Value,
-        Amount: record.GetRequiredField("amount").As<DamlNumeric>().Value,
-        Lock: record.GetOptionalField("lock").AsOptional().HasValue ? global::Splice.Api.Token.HoldingV2.Lock.FromRecord(record.GetOptionalField("lock").AsOptional().Value!.As<DamlRecord>()) : null
+    public static Asset FromRecord(global::Daml.Runtime.Data.DamlRecord record) => new Asset(
+        Issuer: global::Daml.Runtime.Data.Party.FromDamlValue(record.GetRequiredField("issuer").As<global::Daml.Runtime.Data.DamlParty>()),
+        Owner: global::Daml.Runtime.Data.Party.FromDamlValue(record.GetRequiredField("owner").As<global::Daml.Runtime.Data.DamlParty>()),
+        Name: record.GetRequiredField("name").As<global::Daml.Runtime.Data.DamlText>().Value,
+        Amount: record.GetRequiredField("amount").As<global::Daml.Runtime.Data.DamlNumeric>().Value,
+        Lock: record.GetOptionalField("lock").AsOptional().HasValue ? global::Splice.Api.Token.HoldingV2.Lock.FromRecord(record.GetOptionalField("lock").AsOptional().Value!.As<global::Daml.Runtime.Data.DamlRecord>()) : null
     );
 
     /// <summary>Decodes a Daml-LF JSON record directly into a DamlRecord, without going through reflection.</summary>
     [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-    public static DamlRecord __ReadDamlLfJson(global::System.Text.Json.JsonElement json, global::Daml.Runtime.Serialization.DamlLfJsonDecodeContext context)
+    public static global::Daml.Runtime.Data.DamlRecord __ReadDamlLfJson(global::System.Text.Json.JsonElement json, global::Daml.Runtime.Serialization.DamlLfJsonDecodeContext context)
     {
         global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireObject(json, context);
-        return DamlRecord.Create(
-            DamlField.Create("issuer", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "issuer"), context.Field("issuer"))),
-            DamlField.Create("owner", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "owner"), context.Field("owner"))),
-            DamlField.Create("name", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadText(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "name"), context.Field("name"))),
-            DamlField.Create("amount", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadNumeric(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "amount"), context.Field("amount"))),
-            DamlField.Create("lock", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadOptional(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.OptionalField(json, "lock"), context.Field("lock"), (__json0, __ctx0) => global::Splice.Api.Token.HoldingV2.Lock.__ReadDamlLfJson(__json0, __ctx0)))
-        );
+        var fields = new global::System.Collections.Generic.List<global::Daml.Runtime.Data.DamlField>(5);
+        fields.Add(global::Daml.Runtime.Data.DamlField.Create("issuer", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "issuer"), context.Field("issuer"))));
+        fields.Add(global::Daml.Runtime.Data.DamlField.Create("owner", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadParty(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "owner"), context.Field("owner"))));
+        fields.Add(global::Daml.Runtime.Data.DamlField.Create("name", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadText(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "name"), context.Field("name"))));
+        fields.Add(global::Daml.Runtime.Data.DamlField.Create("amount", global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadNumeric(global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireField(json, context, "amount"), context.Field("amount"))));
+        global::Daml.Runtime.Serialization.DamlLfJsonDecoders.AddFieldIfPresent(fields, json, "lock", present => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadOptional(present, context.Field("lock"), (__json0, __ctx0) => global::Splice.Api.Token.HoldingV2.Lock.__ReadDamlLfJson(__json0, __ctx0)));
+        return global::Daml.Runtime.Data.DamlRecord.Create(fields.ToArray());
     }
 
     /// <summary>
     /// Exercise the Archive choice.
     /// This choice is consuming and will archive the contract.
     /// </summary>
-    public static Choice<Asset, DamlUnit, DamlUnit> ChoiceArchive { get; } = new()
+    public static global::Daml.Runtime.Commands.Choice<Asset, global::Daml.Runtime.Data.DamlUnit, global::Daml.Runtime.Data.DamlUnit> ChoiceArchive { get; } = new()
     {
-        Name = new ChoiceName("Archive"),
+        Name = new global::Daml.Runtime.Commands.ChoiceName("Archive"),
         Consuming = true,
-        ArgumentEncoder = _ => DamlRecord.Create(),
-        ArgumentDecoder = val => val is DamlRecord { Fields.Count: 0 } ? DamlUnit.Instance : throw new global::System.InvalidOperationException("Choice 'Archive' argument must decode to an empty record."),
-        ResultDecoder = _ => DamlUnit.Instance,
+        ArgumentEncoder = _ => global::Daml.Runtime.Data.DamlRecord.Create(),
+        ArgumentDecoder = val => val is global::Daml.Runtime.Data.DamlRecord { Fields.Count: 0 } ? global::Daml.Runtime.Data.DamlUnit.Instance : throw new global::System.InvalidOperationException("Choice 'Archive' argument must decode to an empty record."),
+        ResultDecoder = _ => global::Daml.Runtime.Data.DamlUnit.Instance,
         ArgumentJsonReader = (json, context) =>
         {
             global::Daml.Runtime.Serialization.DamlLfJsonDecoders.RequireObject(json, context);
-            return DamlRecord.Create();
+            return global::Daml.Runtime.Data.DamlRecord.Create();
         },
         ResultJsonReader = (json, context) => global::Daml.Runtime.Serialization.DamlLfJsonDecoders.ReadUnit(json, context),
     };
 
     /// <summary>Gets the choice descriptors declared by this type.</summary>
-    public static IReadOnlyList<IChoice> Choices { get; } = [ChoiceArchive];
+    public static global::System.Collections.Generic.IReadOnlyList<global::Daml.Runtime.Commands.IChoice> Choices { get; } = [ChoiceArchive];
 
     /// <summary>
     /// Builds the <see cref="global::Daml.Runtime.Commands.ExerciseByKeyCommand"/> for the Archive choice on the contract carrying this key.
@@ -117,15 +117,15 @@ public sealed partial record Asset(
     /// the ledger resolves this command against a first match by an order it only partly
     /// guarantees. Keeping a key unique is the application's responsibility.
     /// </remarks>
-    public static ExerciseByKeyCommand ArchiveByKeyCommand(
-        Tuple2<Party, string> key)
+    public static global::Daml.Runtime.Commands.ExerciseByKeyCommand ArchiveByKeyCommand(
+        global::Daml.Runtime.Stdlib.Tuple2<global::Daml.Runtime.Data.Party, string> key)
     {
-        ArgumentNullException.ThrowIfNull(key);
-        return new ExerciseByKeyCommand(
-            Asset.TemplateId,
-            key.ToRecord(__t0 => (DamlValue)(__t0.ToDamlValue()), __t1 => (DamlValue)(new DamlText(__t1))),
-            new ChoiceName("Archive"),
-            DamlRecord.Create());
+        global::System.ArgumentNullException.ThrowIfNull(key);
+        return new global::Daml.Runtime.Commands.ExerciseByKeyCommand(
+            global::MiniDemo.Asset.Asset.TemplateId,
+            key.ToRecord(__t0 => (global::Daml.Runtime.Data.DamlValue)(__t0.ToDamlValue()), __t1 => (global::Daml.Runtime.Data.DamlValue)(new global::Daml.Runtime.Data.DamlText(__t1))),
+            new global::Daml.Runtime.Commands.ChoiceName("Archive"),
+            global::Daml.Runtime.Data.DamlRecord.Create());
     }
 
 }
@@ -152,16 +152,16 @@ public static class AssetSubmissionExtensions
     /// <param name="payload">The contract payload.</param>
     /// <param name="configure">Optional hook that receives the submission built for this call and returns the one to submit, so a caller can add what this helper does not expose: <c>s => s.WithDisclosedContracts(holding.Disclosure!)</c>, <c>WithDeduplicationPeriod</c>, <c>WithSynchronizerId</c> or <c>WithMinLedgerTime</c>. It must keep the helper's command, and the submitter's act-as and read-as parties replace any set on the submission. The default <c>null</c> submits the submission unchanged.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public static Task<ExerciseOutcome<ContractId<Asset>>> TryCreateAsync(
-        this ILedgerWriter client,
+    public static global::System.Threading.Tasks.Task<global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Contracts.ContractId<Asset>>> TryCreateAsync(
+        this global::Daml.Ledger.Abstractions.ILedgerWriter client,
         Asset payload,
-        Func<CommandsSubmission, CommandsSubmission>? configure = null,
-        CancellationToken cancellationToken = default)
+        global::System.Func<global::Daml.Runtime.Commands.CommandsSubmission, global::Daml.Runtime.Commands.CommandsSubmission>? configure = null,
+        global::System.Threading.CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(client);
-        ArgumentNullException.ThrowIfNull(payload);
+        global::System.ArgumentNullException.ThrowIfNull(client);
+        global::System.ArgumentNullException.ThrowIfNull(payload);
 
-        SubmitterInfo submitter = payload.Issuer;
+        global::Daml.Runtime.Commands.SubmitterInfo submitter = payload.Issuer;
 
         return global::Daml.Ledger.Abstractions.Extensions.SingleCommandExtensions.TryCreateAsync<Asset>(client, payload, submitter, configure: configure, cancellationToken: cancellationToken);
     }
@@ -174,10 +174,10 @@ public static class AssetSubmissionExtensions
     /// choice.
     /// </summary>
     /// <param name="payload">The contract payload.</param>
-    public static IReadOnlyList<Party> Observers(Asset payload)
+    public static global::System.Collections.Generic.IReadOnlyList<global::Daml.Runtime.Data.Party> Observers(Asset payload)
     {
-        ArgumentNullException.ThrowIfNull(payload);
-        return new Party[]
+        global::System.ArgumentNullException.ThrowIfNull(payload);
+        return new global::Daml.Runtime.Data.Party[]
         {
             payload.Owner
         };
@@ -185,7 +185,7 @@ public static class AssetSubmissionExtensions
 }
 
 /// <summary>
-/// Async exerciser extensions for <see cref="Asset"/> contract IDs whose choices
+/// Async exerciser extensions for <see cref="global::MiniDemo.Asset.Asset"/> contract IDs whose choices
 /// return a non-contract-id payload (Decimal, records, lists, Unit, etc.).
 /// Each method submits the choice via
 /// <c>SingleCommandExtensions.TrySubmitSingleAsync</c> and lifts the typed result
@@ -197,20 +197,20 @@ public static class AssetNonContractExtensions
     /// Builds the <see cref="global::Daml.Runtime.Commands.ExerciseCommand"/> for the Archive choice on this contract id.
     /// </summary>
     /// <param name="contractId">The contract on which to exercise the choice.</param>
-    public static ExerciseCommand ArchiveCommand(
-        this ContractId<Asset> contractId)
+    public static global::Daml.Runtime.Commands.ExerciseCommand ArchiveCommand(
+        this global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Asset> contractId)
     {
-        ArgumentNullException.ThrowIfNull(contractId);
-        return new ExerciseCommand(
-            Asset.TemplateId,
+        global::System.ArgumentNullException.ThrowIfNull(contractId);
+        return new global::Daml.Runtime.Commands.ExerciseCommand(
+            global::MiniDemo.Asset.Asset.TemplateId,
             contractId,
-            new ChoiceName("Archive"),
-            DamlRecord.Create());
+            new global::Daml.Runtime.Commands.ChoiceName("Archive"),
+            global::Daml.Runtime.Data.DamlRecord.Create());
     }
 
     /// <summary>
     /// Exercises the Archive choice and lifts the choice's exercise result to
-    /// <see cref="ExerciseOutcome{T}"/> over <c>DamlUnit</c>. Structured Canton/Daml errors
+    /// <see cref="ExerciseOutcome{T}"/> over <c>global::Daml.Runtime.Data.DamlUnit</c>. Structured Canton/Daml errors
     /// and infrastructure/transport errors pass through unchanged.
     /// </summary>
     /// <param name="contractId">The contract on which to exercise the choice.</param>
@@ -221,17 +221,17 @@ public static class AssetNonContractExtensions
     /// <param name="timeout">Optional per-call deadline, applied best-effort by the transport; transports without a server-side deadline apply a client-side bound only. The default <c>null</c> applies no deadline. An overrun surfaces as an <c>InfraError</c> outcome.</param>
     /// <param name="configure">Optional hook that receives the submission built for this call and returns the one to submit, so a caller can add what this helper does not expose: <c>s => s.WithDisclosedContracts(holding.Disclosure!)</c>, <c>WithDeduplicationPeriod</c>, <c>WithSynchronizerId</c> or <c>WithMinLedgerTime</c>. It runs after <c>workflowId</c> and <c>commandId</c> are applied. It must keep the helper's command, and the submitter's act-as and read-as parties replace any set on the submission. The default <c>null</c> submits the submission unchanged.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public static async Task<ExerciseOutcome<DamlUnit>> TryArchiveAsync(
-        this ContractId<Asset> contractId,
-        ILedgerWriter client,
-        SubmitterInfo submitter,
+    public static async global::System.Threading.Tasks.Task<global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Data.DamlUnit>> TryArchiveAsync(
+        this global::Daml.Runtime.Contracts.ContractId<global::MiniDemo.Asset.Asset> contractId,
+        global::Daml.Ledger.Abstractions.ILedgerWriter client,
+        global::Daml.Runtime.Commands.SubmitterInfo submitter,
         string? workflowId = null,
-        CommandId? commandId = null,
-        TimeSpan? timeout = null,
-        Func<CommandsSubmission, CommandsSubmission>? configure = null,
-        CancellationToken cancellationToken = default)
+        global::Daml.Runtime.Commands.CommandId? commandId = null,
+        global::System.TimeSpan? timeout = null,
+        global::System.Func<global::Daml.Runtime.Commands.CommandsSubmission, global::Daml.Runtime.Commands.CommandsSubmission>? configure = null,
+        global::System.Threading.CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(client);
+        global::System.ArgumentNullException.ThrowIfNull(client);
 
         var command = contractId.ArchiveCommand();
 
@@ -240,32 +240,6 @@ public static class AssetNonContractExtensions
         return outcome.ProjectCommitted(tx => ProjectArchiveResult(tx, contractId.Value));
     }
 
-    private static ExerciseOutcome<DamlUnit> ProjectArchiveResult(TransactionResult tx, string contractId)
-    {
-        foreach (var exercised in tx.ExercisedEvents)
-        {
-            if (string.Equals(exercised.ContractId, contractId, StringComparison.Ordinal)
-                && string.Equals(exercised.TemplateId.ModuleName, Asset.TemplateId.ModuleName, StringComparison.Ordinal)
-                && string.Equals(exercised.TemplateId.EntityName, Asset.TemplateId.EntityName, StringComparison.Ordinal)
-                && string.Equals(exercised.ChoiceName.Value, "Archive", StringComparison.Ordinal))
-            {
-                try
-                {
-                    var decoded = Asset.ChoiceArchive.ResultDecoder!(exercised.ExerciseResult);
-                    return new ExerciseOutcome<DamlUnit>.One(decoded);
-                }
-                catch (global::System.Exception ex) when (ex is not global::System.OperationCanceledException)
-                {
-                    return new ExerciseOutcome<DamlUnit>.CommittedUndecodable(tx.UpdateId, ex.Message, ex);
-                }
-            }
-        }
-
-        throw new InvalidOperationException(
-            $"Submission succeeded but no 'Archive' exercise on contract '{contractId}' was recorded on transaction {tx.UpdateId}. " +
-            "The transaction returned for this submission carries no exercised event for it. " +
-            "Either a custom ILedgerWriter did not project the transaction's exercised events into TransactionResult.ExercisedEvents, " +
-            "or the transaction was requested in a shape without exercised events (ACS_DELTA); " +
-            "request the LEDGER_EFFECTS shape with verbose events.");
-    }
+    private static global::Daml.Runtime.Outcomes.ExerciseOutcome<global::Daml.Runtime.Data.DamlUnit> ProjectArchiveResult(global::Daml.Runtime.Contracts.TransactionResult tx, string contractId) =>
+        tx.ProjectChoiceResult(global::MiniDemo.Asset.Asset.ChoiceArchive, contractId);
 }
