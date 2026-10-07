@@ -234,11 +234,11 @@ internal sealed class MiniDemoRunner
             workflowId: WorkflowId,
             cancellationToken: ct);
         var transaction = outcome.Unwrap(nameof(MintByKeyAsync));
-        var minted = MintResult.FromCreatedContracts(transaction.CreatedContracts).Unwrap(nameof(MintByKeyAsync));
+        var minted = transaction.Single<DemoAsset>();
         Console.WriteLine(
             $"  mint     {AmountFormat.Display(amount)} {instrumentKey.Name} to {ownerLabel}, by key {instrumentKey} " +
-            $"over {transportName} -> {minted.Asset.Value}");
-        return minted.Asset;
+            $"over {transportName} -> {minted.Value}");
+        return minted;
     }
 
     internal static TransferProposal ProposalFor(

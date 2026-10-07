@@ -6,7 +6,7 @@
     <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.1" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
-    <PackageVersion Include="Canton.Ledger.Testing" Version="0.6.0-preview.3" />
+    <PackageVersion Include="Canton.Ledger.Testing" Version="0.6.0-preview.4" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
   </ItemGroup>
 </Project>
