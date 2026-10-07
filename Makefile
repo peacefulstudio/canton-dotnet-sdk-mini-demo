@@ -6,10 +6,10 @@
 help:
 	@echo "Targets:"
 	@echo "  make codegen   Build the Daml package and regenerate committed C# bindings"
-	@echo "  make daml-test Run the Daml Script tests under daml/test (accept, reject, withdraw)"
+	@echo "  make daml-test Run the Daml Script tests under daml/test (accept, reject, withdraw, late accept, partial transfer)"
 	@echo "  make build     dotnet build MiniDemo.slnx"
 	@echo "  make run       dotnet run --project src/MiniDemo (needs a running LocalNet; env vars optional)"
-	@echo "                 REQUIRE_PQS=1 make run adds --require-pqs (PQS short of full projection exits 69)"
+	@echo "                 REQUIRE_PQS=1 make run adds --require-pqs (PQS short of full projection: the demo exits 69, make exits 2)"
 	@echo "  make clean     Remove build output"
 	@echo ""
 	@echo "LocalNet itself is NOT started here. Bring it up from peacefulstudio/canton-localnet"

@@ -63,6 +63,9 @@ internal static class LocalnetPreflight
     public static bool IsLocalnetUnresponsive(Exception exception) =>
         ExceptionChain.Flatten(exception).Any(current => current is TimeoutException);
 
+    public static void WriteConfigurationProblem(string problem, TextWriter writer) =>
+        writer.WriteLine($"\nThe demo cannot start with this configuration.\n\n{problem}");
+
     public static void WriteCancelledNotice(TextWriter writer) =>
         writer.WriteLine("\nDemo cancelled before it finished.");
 
@@ -77,19 +80,29 @@ internal static class LocalnetPreflight
         writer.WriteLine(
             $"\nCanton LocalNet is not reachable, or is not ready yet ({exception.Message}).\n" +
             "If you just started it, wait a few seconds and retry. Otherwise start a LocalNet, or set the\n" +
-            "CANTON_LOCALNET_* env vars to point at a running one (see README \u2192 Quickstart).");
+            "CANTON_LOCALNET_* env vars to point at a running one (see docs/public/quickstart-details.md).");
 
     public static void WriteUnresponsiveHelp(Exception exception, TextWriter writer) =>
         writer.WriteLine(
             $"\nCanton LocalNet accepted the connection but did not respond in time ({exception.Message}).\n" +
-            "It is running but not healthy \u2014 check its logs, or restart it (see README \u2192 Quickstart).");
+            "It is running but not healthy \u2014 check its logs, or restart it (see docs/public/quickstart-details.md).");
 
-    public static void WritePqsRequirementFailure(PqsRequirementNotMetException exception, TextWriter writer) =>
-        writer.WriteLine(
-            "\n--require-pqs was set, and PQS did not reach full projection within the bounded wait.\n\n" +
-            $"{exception.Message}\n\n" +
-            "Sections 1-5 already passed, so the ledger is fine — this is the read model lagging,\n" +
-            "stopped, or not yet caught up.");
+    public static void WritePqsRequirementFailure(PqsRequirementNotMetException exception, TextWriter writer)
+    {
+        var header = exception.PqsWasUnavailable
+            ? "--require-pqs was set, but PQS is not available."
+            : "--require-pqs was set, and PQS did not reach full projection within the bounded wait.";
+        var nextStep = exception.PqsWasUnavailable
+            ? "start PQS for the selected slot (`make up PQS=true` in canton-localnet starts it for a-validator-1 only) and re-run."
+            : "this is the read model lagging, stopped, or not yet caught up.";
+        writer.WriteLine($"\n{header}\n\n{exception.Message}\n\n{LedgerProgress(exception.Stage)}, so the ledger is fine — {nextStep}");
+    }
+
+    private static string LedgerProgress(PqsRequirementStage stage) =>
+        stage == PqsRequirementStage.PendingHoldingRead
+            ? "The run stopped in section 3, right after alice's transfer proposal committed. Sections 1-2 passed and the\n" +
+              "proposal is left pending (bob never accepted it)"
+            : "Sections 1-5 already passed";
 
     public static void WriteLedgerOperationFailure(LedgerOperationException exception, TextWriter writer) =>
         writer.WriteLine(

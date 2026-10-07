@@ -25,6 +25,8 @@ internal static class PqsLane
     internal delegate Task<IReadOnlyList<InterfaceContract<IHolding, HoldingView>>> HoldingsFilterQuery(
         string connectionString, IReadOnlyCollection<string> contractIds, CancellationToken cancellationToken);
 
+    private const string DatabasePrefix = "pqs-";
+
     internal static async Task RunAsync(
         int section,
         IPqsClient pqsClient,
@@ -56,10 +58,9 @@ internal static class PqsLane
 
         if (wait is PqsWaitResult.Unavailable unavailable)
         {
-            WriteUnavailableHint(unavailable.Exception, output);
+            WriteUnavailableHint(unavailable.Exception, requirePqs, connectionString, output);
             if (requirePqs)
-                throw new PqsRequirementNotMetException(
-                    $"PQS was never available ({unavailable.Exception.Message}).", unavailable.Exception);
+                throw PqsRequirementNotMetException.Unavailable(unavailable.Exception);
             return;
         }
 
@@ -111,10 +112,9 @@ internal static class PqsLane
 
         if (wait is PqsWaitResult.Unavailable unavailable)
         {
-            WriteUnavailableHint(unavailable.Exception, output);
+            WriteUnavailableHint(unavailable.Exception, requirePqs, connectionString, output);
             if (requirePqs)
-                throw new PqsRequirementNotMetException(
-                    $"PQS was never available ({unavailable.Exception.Message}).", unavailable.Exception);
+                throw PqsRequirementNotMetException.Unavailable(unavailable.Exception, PqsRequirementStage.PendingHoldingRead);
             return null;
         }
 
@@ -124,7 +124,8 @@ internal static class PqsLane
                 lockedHoldingCid, projectionTimeout, connectionString, "The transfer proposal already committed", output);
             if (requirePqs)
                 throw new PqsRequirementNotMetException(
-                    $"PQS did not project the locked holding {lockedHoldingCid.Value} within {projectionTimeout.TotalSeconds:0}s.");
+                    $"PQS did not project the locked holding {lockedHoldingCid.Value} within {projectionTimeout.TotalSeconds:0}s.",
+                    PqsRequirementStage.PendingHoldingRead);
             return null;
         }
 
@@ -142,7 +143,8 @@ internal static class PqsLane
                 if (requirePqs)
                     throw new PqsRequirementNotMetException(
                         $"PQS returned {viewed.Count} IHolding view(s) of the locked holding {lockedHoldingCid.Value} " +
-                        $"after {budget.Elapsed.TotalSeconds:0}s of a {projectionTimeout.TotalSeconds:0}s budget.");
+                        $"after {budget.Elapsed.TotalSeconds:0}s of a {projectionTimeout.TotalSeconds:0}s budget.",
+                        PqsRequirementStage.PendingHoldingRead);
                 return null;
             }
 
@@ -220,7 +222,7 @@ internal static class PqsLane
         output.WriteLine(
             $"  PQS projected {matchedCount} of {expectedCount} Asset contract(s) owned by {ownerLabel} " +
             "(WHERE owner = ? and LIMIT pushed into Postgres — the participant is never queried):");
-        foreach (var contract in owned)
+        foreach (var contract in owned.OrderByDescending(contract => contract.Data.Amount).ThenBy(contract => contract.Id.Value, StringComparer.Ordinal))
             output.WriteLine($"             {contract.Id.Value} name={contract.Data.Name} amount={contract.Data.Amount}");
 
         if (matchedCount < expectedCount)
@@ -233,7 +235,7 @@ internal static class PqsLane
         output.WriteLine(
             $"  PQS projected {viewed.Count} of {expectedCount} of them as IHolding views " +
             "(the interface view, decoded without naming the Asset template):");
-        foreach (var holding in viewed)
+        foreach (var holding in viewed.OrderByDescending(holding => holding.View.Amount).ThenBy(holding => holding.Id.Value, StringComparer.Ordinal))
             output.WriteLine($"             {holding.Id.Value} {HoldingSnapshot.From(holding).Describe()}");
     }
 
@@ -276,16 +278,29 @@ internal static class PqsLane
         }
     }
 
-    private static void WriteUnavailableHint(Exception exception, TextWriter output) =>
-        output.WriteLine(
-            $"  PQS is not available ({exception.Message}); skipping. Run `make up PQS=true` to enable it.");
+    private static void WriteUnavailableHint(Exception exception, bool requirePqs, string connectionString, TextWriter output)
+    {
+        var consequence = requirePqs ? "--require-pqs is set, so the run fails." : "skipping.";
+        output.WriteLine($"  PQS is not available ({PqsAvailability.DescribeCause(exception)}); {consequence} {HowToEnable(connectionString)}");
+    }
+
+    private static string SlotOf(string database) =>
+        database.StartsWith(DatabasePrefix, StringComparison.Ordinal) ? database[DatabasePrefix.Length..] : database;
+
+    private static string HowToEnable(string connectionString)
+    {
+        var database = PqsConnectionString.ContainerName(connectionString);
+        return database == PqsConnectionString.ContainerName(PqsConnectionString.DefaultConnectionString)
+            ? "Run `make up PQS=true` to enable it."
+            : $"`make up PQS=true` does not start PQS for {SlotOf(database)}; only a-validator-1 gets a read model from it.";
+    }
 
     private static void WriteTimeoutHint(
         ContractId<DemoAsset> contractId, TimeSpan timeout, string connectionString, string ledgerProgress, TextWriter output) =>
         output.WriteLine(
             $"  PQS did not project the Asset contract {contractId.Value} within {timeout.TotalSeconds:0}s.\n" +
             $"  {ledgerProgress}, so the ledger is fine — this is the read model lagging or stopped.\n\n" +
-            $"    docker logs --tail 50 {PqsConnectionString.DatabaseName} | grep -i \"unknown Daml package\"\n" +
+            $"    docker logs --tail 50 {PqsConnectionString.ContainerName(connectionString)} | grep -i \"unknown Daml package\"\n" +
             $"    psql \"{PqsConnectionString.ToPsqlConnInfo(connectionString)}\" -c \"select * from __watermark\"\n\n" +
             "  If you see \"unknown Daml package detected\", scribe is restarting to discover a newly\n" +
             "  uploaded package and will recover on its own — re-run in a minute. Otherwise the scribe\n" +

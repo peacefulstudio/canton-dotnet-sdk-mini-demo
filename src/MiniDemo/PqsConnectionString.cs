@@ -2,22 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Npgsql;
+using Peaceful.Canton.Localnet.Testing;
 
 namespace MiniDemo;
 
 internal static class PqsConnectionString
 {
-    public const string ConnectionStringEnv = "CANTON_LOCALNET_A_VALIDATOR_1_PQS_CONNECTION_STRING";
-
-    public const string DatabaseName = "pqs-a-validator-1";
-
     public const string DefaultConnectionString =
-        "Host=localhost;Port=5432;Database=" + DatabaseName + ";Username=cnadmin;Password=supersafe";
+        "Host=localhost;Port=5432;Database=pqs-a-validator-1;Username=cnadmin;Password=supersafe";
 
-    public static string Resolve(IReadOnlyDictionary<string, string?> env) =>
-        env.TryGetValue(ConnectionStringEnv, out var configured) && !string.IsNullOrWhiteSpace(configured)
+    public static string EnvFor(LocalnetProfile profile) =>
+        $"CANTON_LOCALNET_{LocalnetSlot.EnvKey(profile)}_PQS_CONNECTION_STRING";
+
+    public static string DefaultFor(LocalnetProfile profile) =>
+        $"Host=localhost;Port=5432;Database=pqs-{LocalnetSlot.Name(profile)};Username=cnadmin;Password=supersafe";
+
+    public static string Resolve(LocalnetProfile profile, IReadOnlyDictionary<string, string?> env) =>
+        env.TryGetValue(EnvFor(profile), out var configured) && !string.IsNullOrWhiteSpace(configured)
             ? configured
-            : DefaultConnectionString;
+            : DefaultFor(profile);
+
+    public static string ContainerName(string connectionString) =>
+        new NpgsqlConnectionStringBuilder(connectionString).Database ?? string.Empty;
 
     public static string ToPsqlConnInfo(string connectionString)
     {

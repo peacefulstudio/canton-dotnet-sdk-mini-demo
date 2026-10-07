@@ -44,19 +44,25 @@ export A_VALIDATOR_1_VALIDATOR_USER_TOKEN=$(
 dpm canton-console -c canton-console.conf
 ```
 
-**4. Inside the console**, resolve the participant and the parties the demo printed, then read the
-active contracts and the transaction history:
+**4. Inside the console**, resolve the participant and the ids from the run you care about. Take them
+from the demo's own output: the full `issuer = …` and `bob = …` lines of section 1, and the ledger user
+from the `Granted act-as (issuer/alice/bob) to ledger user <id>` line right below them. Every run
+allocates fresh parties, so ids from an older run — or a lookup by the `issuer-` prefix, which finds
+whichever demo run came first — read the wrong contracts.
+
+The demo leases act-as rights to the ledger user for the run and revokes them when it finishes, so
+after a completed run the console's token no longer has any right on those parties and every query
+fails with `PERMISSION_DENIED`. Grant read rights for the two parties, run the queries, then revoke
+them again:
 
 ```scala
 val p = participants.remote.find(_.name == "a-validator-1").get
 
-// The demo allocates parties as "issuer-<hex>::<namespace>". Match the "issuer-" hint
-// (unique to the demo), then take bob from the same run so LocalNet's own wallet
-// parties are skipped. Run the demo more than once and several demo parties pile up on
-// the ledger — paste the exact ids from the run you care about.
-val parties = p.parties.list().map(_.party)
-val issuer  = parties.filter(_.toProtoPrimitive.startsWith("issuer-")).head
-val bob     = parties.filter(_.toProtoPrimitive == "bob-" + issuer.toProtoPrimitive.stripPrefix("issuer-")).head
+val issuer = PartyId.tryFromProtoPrimitive("issuer-<hex>::1220…")
+val bob    = PartyId.tryFromProtoPrimitive("bob-<hex>::1220…")
+val uid    = "<ledger user id from the Granted act-as line>"
+
+p.ledger_api.users.rights.grant(id = uid, actAs = Set.empty, readAs = Set(issuer, bob))
 
 // (a) What bob owns now — the accepted holding and the one minted to him:
 p.ledger_api.state.acs.of_party(bob).foreach { c =>
@@ -73,11 +79,14 @@ p.ledger_api.updates.transactions(Set(issuer), 100, endOffsetInclusive = Some(en
     e.event.archived.foreach(a => println(s"   - archived ${a.contractId.take(16)}…"))
   }
 }
+
+p.ledger_api.users.rights.revoke(id = uid, actAs = Set.empty, readAs = Set(issuer, bob))
 ```
 
 The contract IDs vary per run, but match the ones the demo just printed. In (a), bob's active
-contract set lists two `Asset` contracts: the 42 GOLD he accepted and the 10 GOLD minted to him. In
-(b), read the issuer's history top to bottom:
+contract set lists three contracts: the `AssetTransferFactory` (bob is one of its observers) and two
+`Asset` contracts, the 42 GOLD he accepted and the 10 GOLD minted to him. In
+(b), the query returns nine updates; read the issuer's history top to bottom:
 
 - three single-event transactions create the `GOLD` and `SILVER` instruments and the
   `AssetTransferFactory`;

@@ -8,14 +8,17 @@ namespace MiniDemo;
 
 internal static class PqsAvailability
 {
-    private const string DatabaseNotFoundSqlState = "3D000";
+    private static readonly string[] UnavailableSqlStates = ["3D000", "42883", "42P01"];
 
     public static bool IsPqsUnavailable(Exception exception) =>
         ExceptionChain.Flatten(exception).Any(current =>
-            IsMissingDatabase(current) || IsConnectionRefused(current));
+            IsUnavailableDatabase(current) || IsConnectionRefused(current));
 
-    private static bool IsMissingDatabase(Exception exception) =>
-        exception is PostgresException postgres && postgres.SqlState == DatabaseNotFoundSqlState;
+    public static string DescribeCause(Exception cause) =>
+        string.Join(' ', cause.Message.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+    private static bool IsUnavailableDatabase(Exception exception) =>
+        exception is PostgresException postgres && UnavailableSqlStates.Contains(postgres.SqlState);
 
     private static bool IsConnectionRefused(Exception exception) =>
         exception is SocketException socket && socket.SocketErrorCode == SocketError.ConnectionRefused;

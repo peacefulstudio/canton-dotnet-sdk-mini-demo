@@ -9,6 +9,42 @@ after a release takes a fourth identifier, for example `0.6.0-preview.3.1`.
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-10-07
+
+**The first stable release**, on the **Canton .NET SDK 0.6.0**. The demo's behavior and console output are unchanged from the last preview; the packages, the `dpm-codegen-cs` component and the Splice token-standard bindings move to their stable versions, and the preview wording leaves the docs. The edge cases the clean-slate runs turned up are fixed too.
+
+**TL;DR** — the same zero-config `dotnet run` still issues a keyed `GOLD` instrument, mints 42 GOLD to **alice**, has **alice** propose a transfer to **bob** over **gRPC** and **bob** accept it over **JSON/REST** with the locked holding **disclosed**, then observes it on the update stream over both transports. Built on the **Canton .NET SDK 0.6.0** (every `Daml.*` / `Canton.Ledger.*` package and the `dpm-codegen-cs` component) and the Splice **1.0.0.17** token-standard bindings, with Daml SDK **3.5.2** targeting Daml-LF **2.3**, against **LocalNet 0.8.4-1** or later. 🎉
+
+### 🎯 What changed
+
+- **Canton .NET SDK 0.6.0** — every `Daml.*` and `Canton.Ledger.*` package, the `dpm-codegen-cs` component (still pinned by digest) and the Splice `holding-v2` and `transfer-instruction-v2` C# bindings (`1.0.0.17`) move to their stable versions together. The regenerated bindings are byte-identical to the last preview's. ⬆️
+- **A bad slot configuration stops the demo before it touches the ledger** — a non-default `CANTON_LOCALNET_PROFILE` without `CANTON_LOCALNET_VALIDATOR_USER_ID`, or an unknown profile, now prints an actionable message (naming the variable and where `canton-localnet` keeps each slot's validator user id) and exits `78`, instead of dying with an unhandled exception after uploading the DAR and allocating parties. 🛑
+- **`--require-pqs` tells the truth** — when PQS is unavailable the run no longer says it is skipping, and the exit-`69` header now distinguishes "PQS is not available" from "did not reach full projection". The exit code is unchanged. 🔍
+- **Section 6 lists in a stable order** — the `Asset` list and the `IHolding` list print by amount descending, ties by contract id, so consecutive runs read the same. 📋
+- **PQS follows the slot** — the demo reads the PQS database of the selected `CANTON_LOCALNET_PROFILE` (`pqs-<slot>`) and honours `CANTON_LOCALNET_<SLOT>_PQS_CONNECTION_STRING`; a slot without PQS is reported as not available instead of waiting on another slot's database. A slot whose `pqs-<slot>` database exists but was never initialised (`make up PQS=true` starts only `a-validator-1`'s scribe, so SQLSTATE `42883` or `42P01`) is treated the same way, and the hint no longer promises `make up PQS=true` for slots it does not start. 🔌
+- **`--require-pqs` names where the run stopped** — a PQS failure in section 3 now says the proposal is left pending, instead of claiming sections 1-5 passed. 📍
+- **A missing `.dar` exits `78`** with the codegen hint, instead of an unhandled exception, and the validator-user-id message no longer points at a canton-localnet path that does not exist for `sv-validator-1`. 🛑
+- **Docs match the code** — the Canton console walkthrough now leases and revokes read rights so it works after a completed run, `REQUIRE_PQS=1 make run` is documented as exiting `2` (`dotnet run` returns `69`), exit `78` is listed, the REST-only registration call is `AddRestLedgerClient` (`AddCantonLedger` is gRPC only), the project layout is complete, and the adopt guide shows the `appsettings.json` keys and packages. 📖
+
+### ▶️ Run it
+
+```sh
+./scripts/codegen.sh                                 # dpm build → dpm codegen-cs        [make codegen]
+dotnet build MiniDemo.slnx                           #                                   [make build]
+dotnet run --project src/MiniDemo                    # zero-config; defaults to a-validator-1   [make run]
+dotnet run --project src/MiniDemo -- --require-pqs   # gate the exit code on PQS too     [REQUIRE_PQS=1 make run]
+```
+
+Needs a Canton **LocalNet 0.8.4-1 or later** up (JSON `:11975` / gRPC `:11901`) from [`canton-localnet`](https://github.com/peacefulstudio/canton-localnet) — `make up PQS=true` there if you want the PQS lane to project — plus `dpm` `>= 1.0.20` with Daml SDK `3.5.2` and a JDK 17+. On Windows, run `pwsh scripts/codegen.ps1` for the first step. Any endpoint, party, token or PQS override still rides a `CANTON_LOCALNET_*` env var — but the happy path needs none.
+
+### 🧪 Under the hood
+
+- Unit tests in `tests/MiniDemo.Tests` run against `Canton.Ledger.Testing` fakes, so the suite stays green with no LocalNet.
+- Generated bindings stay committed under `src/MiniDemo.Contracts/Generated` — regenerate with `scripts/codegen.sh` (pinned to `dpm-codegen-cs:0.6.0` by digest). Clear the dpm component cache first when moving between SDK versions.
+- The README badge now names the SDK version instead of "preview", and the release notes are published as a normal release rather than a prerelease.
+
+📖 Start at the [README](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/README.md) — it walks the whole Daml → codegen → two-step transfer → update-stream loop, section by section.
+
 ## [0.6.0-preview.4] — 2026-10-07
 
 The dependency line moves to the **Canton .NET SDK 0.6.0-preview.4**: one failure contract on both transports, choice results exactly as the Daml returns them, and self-registering generated code. The demo's behavior and console output are unchanged.
@@ -142,7 +178,8 @@ Needs a Canton **LocalNet 0.6.11** up (JSON `:11975` / gRPC `:11901`) and the `d
 
 📖 Start at the [README](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/README.md) — it walks the whole Daml → codegen → run loop.
 
-[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.4...HEAD
+[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.4...v0.6.0
 [0.6.0-preview.4]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.3...v0.6.0-preview.4
 [0.6.0-preview.3]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.2...v0.6.0-preview.3
 [0.6.0-preview.2]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.4.0-preview.1...v0.6.0-preview.2

@@ -122,14 +122,66 @@ public class DemoExitCodeTests
 
         var exitCode = await DemoExitCode.ForRunAsync(
             _ => Task.FromException(
-                new PqsRequirementNotMetException(
-                    $"PQS was never available ({connectionRefused.Message}).", connectionRefused)),
+                PqsRequirementNotMetException.Unavailable(connectionRefused)),
             error,
             CancellationToken.None);
 
         exitCode.Should().Be(69);
-        error.ToString().Should().Contain("--require-pqs was set");
+        error.ToString().Should().Contain("--require-pqs was set, but PQS is not available");
+        error.ToString().Should().NotContain("did not reach full projection");
         error.ToString().Should().NotContain("Canton LocalNet is not reachable");
+    }
+
+    [Fact]
+    public async Task ForRunAsync_names_an_incomplete_projection_in_the_header_when_pqs_was_reachable()
+    {
+        var error = new StringWriter();
+
+        await DemoExitCode.ForRunAsync(
+            _ => Task.FromException(new PqsRequirementNotMetException("PQS projected 1 of 2 Asset contract(s).")),
+            error,
+            CancellationToken.None);
+
+        error.ToString().Should().Contain("did not reach full projection within the bounded wait");
+        error.ToString().Should().NotContain("is not available");
+    }
+
+    [Fact]
+    public async Task ForRunAsync_says_the_run_stopped_in_section_3_with_the_proposal_pending_for_a_pending_holding_failure()
+    {
+        var error = new StringWriter();
+
+        var exitCode = await DemoExitCode.ForRunAsync(
+            _ => Task.FromException(
+                new PqsRequirementNotMetException(
+                    "PQS did not project the locked holding 00ab within 120s.", PqsRequirementStage.PendingHoldingRead)),
+            error,
+            CancellationToken.None);
+
+        exitCode.Should().Be(69);
+        error.ToString().Should().Contain("stopped in section 3");
+        error.ToString().Should().Contain("left pending");
+        error.ToString().Should().NotContain("Sections 1-5 already passed");
+    }
+
+    [Fact]
+    public async Task ForRunAsync_says_sections_1_to_5_passed_for_a_projection_report_failure()
+    {
+        var error = new StringWriter();
+
+        await DemoExitCode.ForRunAsync(
+            _ => Task.FromException(PqsRequirementNotMetException.Unavailable(new SocketException((int)SocketError.ConnectionRefused))),
+            error,
+            CancellationToken.None);
+
+        error.ToString().Should().Contain("Sections 1-5 already passed");
+        error.ToString().Should().NotContain("section 3");
+    }
+
+    [Fact]
+    public void ConfigurationInvalid_is_the_sysexits_EX_CONFIG_code()
+    {
+        DemoExitCode.ConfigurationInvalid.Should().Be(78);
     }
 
     [Fact]
@@ -141,8 +193,7 @@ public class DemoExitCodeTests
 
         var exitCode = await DemoExitCode.ForRunAsync(
             _ => Task.FromException(
-                new PqsRequirementNotMetException(
-                    $"PQS was never available ({connectionFailure.Message}).", connectionFailure)),
+                PqsRequirementNotMetException.Unavailable(connectionFailure)),
             error,
             CancellationToken.None);
 

@@ -23,8 +23,9 @@ by CI rather than taken on trust, and every release is cut from a green run:
   are both green on the tip of `main`, tags `v<Version>` (the version in
   [`Directory.Build.props`](../../Directory.Build.props)) once and starts the release. An open pull request
   labelled `hold-release` pauses it.
-- **[`release.yaml`](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/.github/workflows/release.yaml)** — drafts a prerelease for the tag and publishes
-  it with the matching [`CHANGELOG.md`](../../CHANGELOG.md) section as its notes.
+- **[`release.yaml`](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/.github/workflows/release.yaml)** — drafts a release for the tag and publishes
+  it with the matching [`CHANGELOG.md`](../../CHANGELOG.md) section as its notes, marked a prerelease only when the
+  version contains `-`, so `v0.6.0` publishes as a normal release.
 
 The generated C# under `src/MiniDemo.Contracts/Generated/` is committed. To check it against the Daml
 source yourself, run `make codegen` (needs `dpm` and a JDK, see [Prerequisites](quickstart-details.md#prerequisites)) and

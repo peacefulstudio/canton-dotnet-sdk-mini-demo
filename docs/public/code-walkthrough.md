@@ -89,7 +89,7 @@ and reaching it over HTTP is the registration call:
 `HttpAddress` is the **JSON Ledger API** base URL — not `GrpcAddress`, and not the gRPC port.
 `UserId` is optional: left unset, the participant derives it from the token; the demo passes
 `fixture.ValidatorUserId`, the same ledger user it granted act-as rights to during bootstrap. Both
-transport packages ship on the same `0.6.0-preview.4` line — preview software, pinned centrally (see
+transport packages ship on the same `0.6.0` line, pinned centrally (see
 [Pinned versions](project-layout-and-versions.md#pinned-versions)).
 
 Either call registers one adapter resolvable as the same five service types — `ICantonLedgerClient`,
@@ -102,9 +102,11 @@ methods that need only part of it still take `ILedgerWriter` or `ILedgerClient`,
 stays a detail of the composition root.
 
 The demo uses `AddCantonStaticAuth` because its token comes from the LocalNet fixture; a real service
-uses `AddCantonAuth(configuration)` for OAuth2 client credentials, or `AddCantonLedger(configuration)`
-to wire client and auth together from the canonical `Canton:Ledger` and `Canton:Auth` configuration
-sections.
+uses `AddCantonAuth(configuration.GetSection("Canton:Auth"))` for OAuth2 client credentials. On gRPC, `AddCantonLedger(configuration)`
+(defined only in `Canton.Ledger.Grpc.Client`) wires client and auth together from the canonical
+`Canton:Ledger` and `Canton:Auth` configuration sections from the root configuration; REST has no
+such call, so a REST-only service passes the two sections to
+`services.AddRestLedgerClient(configuration.GetSection("Canton:Rest"), configuration.GetSection("Canton:Auth"))`, which also registers the token provider.
 
 ## Submitting commands
 
@@ -303,8 +305,8 @@ a verification failure.
 The mint and the total supply go **by key**: `Instrument.MintByKeyCommand((issuer, name), …)` and
 `Instrument.TotalSupplyByKeyCommand((issuer, name), …)` build an `ExerciseByKeyCommand` that
 `TrySubmitSingleAsync` submits. That path is untyped: it returns an
-`ExerciseOutcome<TransactionResult>`, so the mint picks the one `Asset` it created out of
-`CreatedContracts`, and the total supply reads the choice's `Decimal` with `ExerciseResult<decimal>`.
+`ExerciseOutcome<TransactionResult>`, so the mint reads the one `Asset` it created with
+`transaction.Single<DemoAsset>()`, and the total supply reads the choice's `Decimal` with `ExerciseResult<decimal>`.
 
 Every `Try…Async` helper returns an **`ExerciseOutcome<T>`** — a structured result that
 distinguishes success (`One`), a Daml validation error (`DamlError` with error-id / category /
@@ -380,7 +382,7 @@ reads.
 Section 6, `PqsLane`, queries the same generated `Asset` bindings against a different kind of surface:
 `IPqsClient` is **not** an `ILedgerClient` — it has no `Create`/`Exercise`, no streaming subscription,
 and only ever sees the current active-contract snapshot the scribe projector has caught up to, not
-history or as-of queries. `PqsLane.RunAsync` polls `IPqsClient.FetchByIdAsync<Asset>` for the specific
+history or as-of queries. `PqsLane.RunAsync` polls `IPqsClient.FetchByIdAsync` for the specific
 contract id of bob's accepted holding — not "any row", which would leave a cold database and an
 empty one indistinguishable — bounded to 120s at a 500ms interval, with a progress line after 2s of
 silence.
@@ -420,9 +422,10 @@ The LocalNet-free logic is covered by **xUnit v3 unit tests** in `tests/MiniDemo
 - `MiniDemoRunnerTests` drives the cross-transport check through fake transports: every transport sees every asset, key and view; a missing contract or view, or a diverging key, payload or view, throws and exits `65` through `DemoExitCode`; a lone transport reads back its own asset. It also pins `RunPqsLaneAsync`'s safety net: a `null` client skips cleanly, a query failure after the probe is found is caught and reported unless `--require-pqs` is set (then it is wrapped into `PqsRequirementNotMetException`), and cancellation still propagates.
 - `DemoExitCodeTests` pins every `DemoExitCode.ForRunAsync` branch to its exit code, including a verification failure that names a connection issue and `PqsRequirementNotMetException` mapping to `69`.
 - `LedgerEndpointTests` covers both endpoint resolutions: the gRPC-address env var and its default, and the JSON Ledger API URL from `EndpointDiscovery`.
+- `LocalnetConfigurationTests` covers the up-front configuration check: the default slot passes, a non-default slot without a validator user id and an unknown profile each produce an actionable message (exit `78`).
 - `LocalnetPreflightTests` covers the startup banner and the socket-error "unreachable" classifier; `ExceptionChainTests` pins the shared exception-chain walk (linear chains, `AggregateException` branches, de-duplication of a shared reference).
 - `PqsConnectionStringTests` covers the PQS connection-string env var and its default.
-- `PqsAvailabilityTests` and `PqsLaneTests` drive the PQS lane through `FakePqsClient` and a hand-rolled `IPqsClient` stub, all on millisecond-scale timeouts: the found, timeout and unavailable outcomes of the bounded wait, the projected-count report and the "still catching up" line. With `--require-pqs` they cover throwing on an unavailable, timed-out or still-incomplete-at-budget outcome, polling through a partial projection until it completes within the budget, and leaving a full first-pass projection unaffected.
+- `PqsAvailabilityTests` and `PqsLaneTests` drive the PQS lane through `FakePqsClient` and a hand-rolled `IPqsClient` stub, all on millisecond-scale timeouts: the found, timeout and unavailable outcomes of the bounded wait, the projected-count report (assets and `IHolding` views listed by amount descending, ties by contract id) and the "still catching up" line. With `--require-pqs` they cover throwing on an unavailable, timed-out or still-incomplete-at-budget outcome, polling through a partial projection until it completes within the budget, and leaving a full first-pass projection unaffected.
 
 `FakePqsClient.WithQueryResults` returns its staged list unconditionally rather than applying the `PqsFilter`, so those tests stage the set a real filtered query would return rather than exercising the filtering itself.
 
