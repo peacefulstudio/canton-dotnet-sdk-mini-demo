@@ -541,7 +541,10 @@ public class TwoStepTransferTests
             WitnessParties: [Parties.Issuer],
             Signatories: [Parties.Issuer],
             Observers: [Parties.Bob],
-            ContractKey: null);
+            ContractKey: null)
+        {
+            PackageName = DemoAsset.PackageName
+        };
 
     private static TransactionResult Transaction(
         CreatedContract[]? created = null, ExercisedEvent[]? exercised = null) =>

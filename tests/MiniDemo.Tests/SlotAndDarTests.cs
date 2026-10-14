@@ -34,14 +34,9 @@ public class SvSlotConfigurationTests
     [InlineData("sv-validator-1")]
     [InlineData("supervalidator")]
     [InlineData("super-validator")]
-    public void FindProblem_names_only_the_env_var_for_the_sv_slot(string spelling)
+    public void FindProblem_accepts_the_sv_slot_once_it_has_credentials(string spelling)
     {
-        var problem = LocalnetConfiguration.FindProblem(SvEnvWithCredentials(spelling));
-
-        problem.Should().Contain(EndpointDiscovery.ValidatorUserIdEnv);
-        problem.Should().Contain("sv-validator-1");
-        problem.Should().NotContain("oauth2.env");
-        problem.Should().NotContain("AUTH_");
+        LocalnetConfiguration.FindProblem(SvEnvWithCredentials(spelling)).Should().BeNull();
     }
 }
 

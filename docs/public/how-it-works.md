@@ -77,7 +77,7 @@ a JDK.
 
 ```mermaid
 flowchart LR
-    A["daml/MiniDemo/Asset.daml"] -->|"dpm build"| B["canton-mini-demo-hbde402d4f83a-0.1.0.dar"]
+    A["daml/MiniDemo/Asset.daml"] -->|"dpm build"| B["canton-mini-demo-h03254a5ede8d-0.1.0.dar"]
     subgraph OCI["dpm codegen-cs · OCI component (ghcr.io, pulled on first use)"]
         direction LR
         J["JVM helper<br/>daml-lf-archive<br/>DAR → canonical AST"] --> R["Roslyn emitter<br/>AST → C#"]
@@ -86,7 +86,7 @@ flowchart LR
     R --> D["src/MiniDemo.Contracts/Generated/*.cs<br/>(committed)"]
 ```
 
-- **`dpm build`** (uses `daml/daml.yaml`, `sdk-version 3.5.2`, `--target=2.3`) emits `daml/.daml/dist/canton-mini-demo-hbde402d4f83a-0.1.0.dar`. The package name carries a
+- **`dpm build`** (uses `daml/daml.yaml`, `sdk-version 3.6.0`, `--target=2.3`) emits `daml/.daml/dist/canton-mini-demo-h03254a5ede8d-0.1.0.dar`. The package name carries a
   content hash that `scripts/compute-package-name.sh` derives from `daml/daml/**`, `daml.yaml`'s
   non-name fields, and every `*.dar` under `daml/dars/**` (the data-dependencies), then rewrites
   into `daml/daml.yaml` on every `scripts/codegen.sh` run, so editing the Daml source, editing a

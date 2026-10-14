@@ -89,7 +89,7 @@ and reaching it over HTTP is the registration call:
 `HttpAddress` is the **JSON Ledger API** base URL — not `GrpcAddress`, and not the gRPC port.
 `UserId` is optional: left unset, the participant derives it from the token; the demo passes
 `fixture.ValidatorUserId`, the same ledger user it granted act-as rights to during bootstrap. Both
-transport packages ship on the same `0.6.0` line, pinned centrally (see
+transport packages ship on the same `0.7.0-preview.1` line, pinned centrally (see
 [Pinned versions](project-layout-and-versions.md#pinned-versions)).
 
 Either call registers one adapter resolvable as the same five service types — `ICantonLedgerClient`,
@@ -422,7 +422,7 @@ The LocalNet-free logic is covered by **xUnit v3 unit tests** in `tests/MiniDemo
 - `MiniDemoRunnerTests` drives the cross-transport check through fake transports: every transport sees every asset, key and view; a missing contract or view, or a diverging key, payload or view, throws and exits `65` through `DemoExitCode`; a lone transport reads back its own asset. It also pins `RunPqsLaneAsync`'s safety net: a `null` client skips cleanly, a query failure after the probe is found is caught and reported unless `--require-pqs` is set (then it is wrapped into `PqsRequirementNotMetException`), and cancellation still propagates.
 - `DemoExitCodeTests` pins every `DemoExitCode.ForRunAsync` branch to its exit code, including a verification failure that names a connection issue and `PqsRequirementNotMetException` mapping to `69`.
 - `LedgerEndpointTests` covers both endpoint resolutions: the gRPC-address env var and its default, and the JSON Ledger API URL from `EndpointDiscovery`.
-- `LocalnetConfigurationTests` covers the up-front configuration check: the default slot passes, a non-default slot without a validator user id and an unknown profile each produce an actionable message (exit `78`).
+- `LocalnetConfigurationTests` covers the up-front configuration check: the default and every non-default slot pass without a validator user id override, and an unknown profile produces an actionable message (exit `78`).
 - `LocalnetPreflightTests` covers the startup banner and the socket-error "unreachable" classifier; `ExceptionChainTests` pins the shared exception-chain walk (linear chains, `AggregateException` branches, de-duplication of a shared reference).
 - `PqsConnectionStringTests` covers the PQS connection-string env var and its default.
 - `PqsAvailabilityTests` and `PqsLaneTests` drive the PQS lane through `FakePqsClient` and a hand-rolled `IPqsClient` stub, all on millisecond-scale timeouts: the found, timeout and unavailable outcomes of the bounded wait, the projected-count report (assets and `IHolding` views listed by amount descending, ties by contract id) and the "still catching up" line. With `--require-pqs` they cover throwing on an unavailable, timed-out or still-incomplete-at-budget outcome, polling through a partial projection until it completes within the budget, and leaving a full first-pass projection unaffected.

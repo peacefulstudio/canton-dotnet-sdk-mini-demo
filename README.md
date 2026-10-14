@@ -6,7 +6,7 @@
   <a href="https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/ci.yaml"><img alt="CI" src="https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/ci.yaml/badge.svg"></a>
   <img alt="Tested on" src="https://img.shields.io/badge/tested%20on-Linux%20%7C%20Windows-2ea44f">
   <img alt=".NET 10" src="https://img.shields.io/badge/.NET-10.0-512BD4">
-  <img alt="Canton SDK" src="https://img.shields.io/badge/Canton%20.NET%20SDK-0.6.0-0A7BBB">
+  <img alt="Canton SDK" src="https://img.shields.io/badge/Canton%20.NET%20SDK-0.7.0--preview.1-0A7BBB">
   <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue">
 </p>
 
@@ -52,12 +52,12 @@ The SDK is a thin, codegen-aware client over the Ledger API, with no in-process 
 
 ## Quickstart
 
-You need the **.NET SDK `>= 10.0.100`**, **`dpm` `>= 1.0.20`**, a **JDK 17+** and a running **Canton LocalNet** from [`canton-localnet`](https://github.com/peacefulstudio/canton-localnet) (`make up`; this repo does not start one). Docker and about 16 GB of RAM are needed for LocalNet. No private feed or credential is needed to build.
+You need the **.NET SDK `>= 10.0.100`**, **`dpm` `>= 1.0.20`**, a **JDK 17+** and a running **Canton LocalNet** from [`canton-localnet`](https://github.com/peacefulstudio/canton-localnet) (`make up`; this repo does not start one). The demo is tested against LocalNet `v0.9.1-1` (Splice 0.9.1, Canton 3.6.1) or later. Docker and about 16 GB of RAM are needed for LocalNet. No private feed or credential is needed to build.
 
 ```bash
-curl -sSL https://get.digitalasset.com/install/install.sh | sh -s -- 3.5.2
+curl -sSL https://get.digitalasset.com/install/install.sh | sh -s -- 3.6.0
 export PATH="$HOME/.dpm/bin:$PATH"
-dpm install 3.5.2
+dpm install 3.6.0
 
 ./scripts/codegen.sh                 # Daml → C# bindings                    [make codegen]
 dotnet build MiniDemo.slnx           # build the solution                    [make build]

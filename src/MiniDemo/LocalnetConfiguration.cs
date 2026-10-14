@@ -9,12 +9,10 @@ internal static class LocalnetConfiguration
 {
     public static string? FindProblem(IReadOnlyDictionary<string, string?> env)
     {
-        LocalnetProfile profile;
         LocalnetEndpoints endpoints;
         try
         {
-            profile = EndpointDiscovery.ResolveProfile(env);
-            endpoints = EndpointDiscovery.Resolve(profile, env);
+            endpoints = EndpointDiscovery.Resolve(EndpointDiscovery.ResolveProfile(env), env);
         }
         catch (InvalidOperationException incompleteConfiguration)
         {
@@ -22,20 +20,7 @@ internal static class LocalnetConfiguration
         }
 
         return string.IsNullOrWhiteSpace(endpoints.ValidatorUserId)
-            ? MissingValidatorUserId(profile)
+            ? $"{EndpointDiscovery.ValidatorUserIdEnv} is set but blank.\nUnset it to use the slot's default validator user id, or set it to a real user id."
             : null;
-    }
-
-    private static string MissingValidatorUserId(LocalnetProfile profile)
-    {
-        var slot = LocalnetSlot.Name(profile);
-        var message =
-            $"No validator ledger user id is configured for {slot}, so the demo cannot lease act-as rights.\n" +
-            $"Set {EndpointDiscovery.ValidatorUserIdEnv} to that slot's validator user id.";
-        return profile == LocalnetProfile.SvValidator1
-            ? message
-            : message +
-              $"\ncanton-localnet keeps it as AUTH_{LocalnetSlot.EnvKey(profile)}_VALIDATOR_USER_ID in " +
-              $"compose/modules/keycloak/env/{slot}/on/oauth2.env.";
     }
 }

@@ -8,7 +8,7 @@ Back to the [README](../../README.md).
 
 ```
 daml/
-  daml.yaml                       # sdk-version 3.5.2, Daml-LF 2.3, package canton-mini-demo-hbde402d4f83a 0.1.0
+  daml.yaml                       # sdk-version 3.6.0, Daml-LF 2.3, package canton-mini-demo-h03254a5ede8d 0.1.0
   daml/MiniDemo/Asset.daml        # Instrument, Asset (IHolding), AssetTransferFactory, AssetTransferInstruction
   dars/                           # Splice token-standard DARs: holding-v2, metadata-v1, transfer-instruction-v2
   test/                           # Daml Script tests: accept, reject, withdraw, late accept, partial transfer (plus the shared setup script, which `dpm test` also reports)
@@ -23,7 +23,7 @@ src/
     Generated/MiniDemo/Asset/     #   Instrument*.cs, Asset.cs, AssetTransferFactory.cs, AssetTransferInstruction.cs, PackageRegistration_<hash>.cs
   MiniDemo/                       # the console CLI
     Program.cs                    #   entry point: read env → check configuration → print banner → MiniDemoRunner
-    LocalnetConfiguration.cs      #   up-front check: known profile, complete defaults, validator user id present (exit 78)
+    LocalnetConfiguration.cs      #   up-front check: known profile, complete endpoint defaults (exit 78)
     MiniDemoRunner.cs             #   bootstrap → issuance → two-step transfer → cross-transport check
     UpdateStreamObserver.cs       #   offset-bounded, deadline-guarded SubscribeAsync<Asset> read of the transfer's Created event
     LedgerTransport.cs            #   a transport: name + endpoint + the resolved ICantonLedgerClient + its result style
@@ -74,21 +74,21 @@ component for `dpm codegen-cs`.
 
 | Component | Version |
 |-----------|---------|
-| Daml SDK (`dpm install`) | `3.5.2` |
+| Daml SDK (`dpm install`) | `3.6.0` |
 | Daml-LF target (`--target`) | `2.3` |
-| `dpm` launcher | `>= 1.0.20` (pin the installer to `3.5.2`, which lands `1.0.21`) |
-| `dpm-codegen-cs` OCI component | `0.6.0` (pinned by digest) |
-| `Daml.Runtime` | `0.6.0` |
-| `Daml.Ledger.Abstractions` | `0.6.0` |
-| `Canton.Ledger.Grpc.Client` | `0.6.0` |
-| `Canton.Ledger.Rest.Client` | `0.6.0` |
-| `Canton.Ledger.Kernel` | `0.6.0` |
-| `Canton.Ledger.Pqs.Client` | `0.6.0` |
+| `dpm` launcher | `>= 1.0.20` (pin the installer to `3.6.0`, which lands `1.0.22`) |
+| `dpm-codegen-cs` OCI component | `0.7.0-preview.1` (pinned by digest) |
+| `Daml.Runtime` | `0.7.0-preview.1` |
+| `Daml.Ledger.Abstractions` | `0.7.0-preview.1` |
+| `Canton.Ledger.Grpc.Client` | `0.7.0-preview.1` |
+| `Canton.Ledger.Rest.Client` | `0.7.0-preview.1` |
+| `Canton.Ledger.Kernel` | `0.7.0-preview.1` |
+| `Canton.Ledger.Pqs.Client` | `0.7.0-preview.1` |
 | `Npgsql` | `10.0.3` |
-| `Splice.Api.Token.Holding.V2` | `1.0.0.17` |
-| `Splice.Api.Token.Transfer.Instruction.V2` | `1.0.0.17` |
-| `Canton.Ledger.Testing` | `0.6.0` (test projects only) |
-| `Peaceful.Canton.Localnet.Testing` | `0.8.4.1` |
+| `Splice.Api.Token.Holding.V2` | `1.0.0.18-preview.1` |
+| `Splice.Api.Token.Transfer.Instruction.V2` | `1.0.0.18-preview.1` |
+| `Canton.Ledger.Testing` | `0.7.0-preview.1` (test projects only) |
+| `Peaceful.Canton.Localnet.Testing` | `0.9.1.1` |
 | `Microsoft.Extensions.DependencyInjection` | `10.0.12` |
 | `Microsoft.Extensions.Logging.Console` | `10.0.12` |
 | .NET SDK | `10.0` |
