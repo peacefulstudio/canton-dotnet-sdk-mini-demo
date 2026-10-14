@@ -6,7 +6,7 @@
   <a href="https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/ci.yaml"><img alt="CI" src="https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/ci.yaml/badge.svg"></a>
   <img alt="Tested on" src="https://img.shields.io/badge/tested%20on-Linux%20%7C%20Windows-2ea44f">
   <img alt=".NET 10" src="https://img.shields.io/badge/.NET-10.0-512BD4">
-  <img alt="Canton SDK" src="https://img.shields.io/badge/Canton%20.NET%20SDK-0.7.0--preview.1-0A7BBB">
+  <img alt="Canton SDK" src="https://img.shields.io/badge/Canton%20.NET%20SDK-0.7.0-0A7BBB">
   <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue">
 </p>
 

@@ -77,20 +77,20 @@ component for `dpm codegen-cs`.
 | Daml SDK (`dpm install`) | `3.6.0` |
 | Daml-LF target (`--target`) | `2.3` |
 | `dpm` launcher | `>= 1.0.20` (pin the installer to `3.6.0`, which lands `1.0.22`) |
-| `dpm-codegen-cs` OCI component | `0.7.0-preview.1` (pinned by digest) |
-| `Daml.Runtime` | `0.7.0-preview.1` |
-| `Daml.Ledger.Abstractions` | `0.7.0-preview.1` |
-| `Canton.Ledger.Grpc.Client` | `0.7.0-preview.1` |
-| `Canton.Ledger.Rest.Client` | `0.7.0-preview.1` |
-| `Canton.Ledger.Kernel` | `0.7.0-preview.1` |
-| `Canton.Ledger.Pqs.Client` | `0.7.0-preview.1` |
+| `dpm-codegen-cs` OCI component | `0.7.0` (pinned by digest) |
+| `Daml.Runtime` | `0.7.0` |
+| `Daml.Ledger.Abstractions` | `0.7.0` |
+| `Canton.Ledger.Grpc.Client` | `0.7.0` |
+| `Canton.Ledger.Rest.Client` | `0.7.0` |
+| `Canton.Ledger.Kernel` | `0.7.0` |
+| `Canton.Ledger.Pqs.Client` | `0.7.0` |
 | `Npgsql` | `10.0.3` |
-| `Splice.Api.Token.Holding.V2` | `1.0.0.18-preview.1` |
-| `Splice.Api.Token.Transfer.Instruction.V2` | `1.0.0.18-preview.1` |
-| `Canton.Ledger.Testing` | `0.7.0-preview.1` (test projects only) |
+| `Splice.Api.Token.Holding.V2` | `1.0.0.19` |
+| `Splice.Api.Token.Transfer.Instruction.V2` | `1.0.0.19` |
+| `Canton.Ledger.Testing` | `0.7.0` (test projects only) |
 | `Peaceful.Canton.Localnet.Testing` | `0.9.1.1` |
-| `Microsoft.Extensions.DependencyInjection` | `10.0.12` |
-| `Microsoft.Extensions.Logging.Console` | `10.0.12` |
+| `Microsoft.Extensions.DependencyInjection` | `10.0.13` |
+| `Microsoft.Extensions.Logging.Console` | `10.0.13` |
 | .NET SDK | `10.0` |
 
 All versions are centrally managed (Central Package Management) in `Directory.Packages.props`, and
