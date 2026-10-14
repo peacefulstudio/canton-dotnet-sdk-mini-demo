@@ -73,7 +73,8 @@ jobs:
         run: |
           set -euo pipefail
           for _ in $(seq 1 150); do
-            if docker logs pqs-a-validator-1 2>&1 | grep -q "Contract filter inclusive"; then
+            if docker logs pqs-a-validator-1 2>&1 | grep -q "Contract filter"; then
+              docker logs pqs-a-validator-1 2>&1 | grep -m 1 "Contract filter"
               exit 0
             fi
             sleep 2
