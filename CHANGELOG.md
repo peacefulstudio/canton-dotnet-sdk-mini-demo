@@ -9,6 +9,36 @@ after a release takes a fourth identifier, for example `0.6.0-preview.3.1`.
 
 ## [Unreleased]
 
+## [0.7.0-preview.1] — 2026-10-14
+
+The demo moves to the **Canton .NET SDK 0.7.0-preview.1** and the **Canton 3.6.1 / Splice 0.9.1** stack: Daml SDK 3.6.0 and LocalNet `v0.9.1-1`. The demo's behavior and console output are unchanged.
+
+**TL;DR** — the same zero-config `dotnet run` still issues a keyed `GOLD` instrument, mints 42 GOLD to **alice**, has **alice** propose a transfer to **bob** over **gRPC** and **bob** accept it over **JSON/REST** with the locked holding **disclosed**, then observes it on the update stream over both transports. Built on the **Canton .NET SDK 0.7.0-preview.1** (every `Daml.*` / `Canton.Ledger.*` package and the `dpm-codegen-cs` component) and the Splice **1.0.0.18-preview.1** token-standard bindings, with Daml SDK **3.6.0** targeting Daml-LF **2.3**, against **LocalNet `v0.9.1-1`** (Canton 3.6.1, Splice 0.9.1) or later. 🎉
+
+### 🎯 What changed
+
+- **Canton .NET SDK 0.7.0-preview.1** — every `Daml.*` and `Canton.Ledger.*` package, the `dpm-codegen-cs` component (still pinned by digest) and the Splice `holding-v2` and `transfer-instruction-v2` C# bindings (`1.0.0.18-preview.1`) move together. The regenerated bindings now address each submitted command by package name (`PackageName` on the command) and carry the new `commandId` documentation. ⬆️
+- **Daml SDK 3.6.0** — the Daml build moves from SDK 3.5.2 to 3.6.0 (still `--target=2.3`), and the install command becomes `curl -sSL https://get.digitalasset.com/install/install.sh | sh -s -- 3.6.0` followed by `dpm install 3.6.0`. That installer lands the `dpm` launcher `1.0.22`, which CI now pins. The package name and id change with the SDK, so the regenerated bindings carry the new package id and name. ⬆️
+- **LocalNet `v0.9.1-1`** — the LocalNet testing package (`0.9.1.1`) and the CI LocalNet pin move to `v0.9.1-1`, which carries Splice 0.9.1 (Canton 3.6.1, PQS 3.6.0). The README now states that the demo is tested against this LocalNet or later, and the demo no longer stops with exit `78` for a non-default slot that has no `CANTON_LOCALNET_VALIDATOR_USER_ID`: the package defaults every slot's validator user id. 📌
+
+### ▶️ Run it
+
+```sh
+./scripts/codegen.sh                                 # dpm build → dpm codegen-cs        [make codegen]
+dotnet build MiniDemo.slnx                           #                                   [make build]
+dotnet run --project src/MiniDemo                    # zero-config; defaults to a-validator-1   [make run]
+dotnet run --project src/MiniDemo -- --require-pqs   # gate the exit code on PQS too     [REQUIRE_PQS=1 make run]
+```
+
+Needs a Canton **LocalNet `v0.9.1-1` or later** up (JSON `:11975` / gRPC `:11901`) from [`canton-localnet`](https://github.com/peacefulstudio/canton-localnet) — `make up PQS=true` there if you want the PQS lane to project — plus `dpm` `>= 1.0.20` with Daml SDK `3.6.0` and a JDK 17+. On Windows, run `pwsh scripts/codegen.ps1` for the first step. Any endpoint, party, token or PQS override still rides a `CANTON_LOCALNET_*` env var — but the happy path needs none.
+
+### 🧪 Under the hood
+
+- Unit tests in `tests/MiniDemo.Tests` run against `Canton.Ledger.Testing` fakes, so the suite stays green with no LocalNet.
+- Generated bindings stay committed under `src/MiniDemo.Contracts/Generated` — regenerate with `scripts/codegen.sh` (pinned to `dpm-codegen-cs:0.7.0-preview.1` by digest). Clear the dpm component cache first when moving between SDK versions.
+
+📖 Start at the [README](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/README.md) — it walks the whole Daml → codegen → two-step transfer → update-stream loop, section by section.
+
 ## [0.6.0] — 2026-10-07
 
 **The first stable release**, on the **Canton .NET SDK 0.6.0**. The demo's behavior and console output are unchanged from the last preview; the packages, the `dpm-codegen-cs` component and the Splice token-standard bindings move to their stable versions, and the preview wording leaves the docs. The edge cases the clean-slate runs turned up are fixed too.
@@ -178,7 +208,8 @@ Needs a Canton **LocalNet 0.6.11** up (JSON `:11975` / gRPC `:11901`) and the `d
 
 📖 Start at the [README](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/README.md) — it walks the whole Daml → codegen → run loop.
 
-[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.0-preview.1...HEAD
+[0.7.0-preview.1]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0...v0.7.0-preview.1
 [0.6.0]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.4...v0.6.0
 [0.6.0-preview.4]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.3...v0.6.0-preview.4
 [0.6.0-preview.3]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.2...v0.6.0-preview.3

@@ -1,5 +1,5 @@
-sdk-version: 3.5.2
-name: canton-mini-demo-hbde402d4f83a
+sdk-version: 3.6.0
+name: canton-mini-demo-h03254a5ede8d
 source: daml
 version: 0.1.0
 dependencies:

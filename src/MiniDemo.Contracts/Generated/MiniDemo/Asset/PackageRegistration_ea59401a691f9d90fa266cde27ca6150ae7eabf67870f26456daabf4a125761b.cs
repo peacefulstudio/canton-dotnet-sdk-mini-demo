@@ -7,7 +7,7 @@
 
 namespace MiniDemo.Asset;
 
-internal static class PackageRegistration_1c7a18f31befd3df5426c623abcbe71fcfe796665de0feefd09ce752ef7fa9fb
+internal static class PackageRegistration_ea59401a691f9d90fa266cde27ca6150ae7eabf67870f26456daabf4a125761b
 {
     [global::System.Runtime.CompilerServices.ModuleInitializer]
     internal static void Register()

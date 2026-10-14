@@ -15,28 +15,23 @@ public class LocalnetConfigurationTests
         LocalnetConfiguration.FindProblem(new Dictionary<string, string?>()).Should().BeNull();
     }
 
-    [Fact]
-    public void FindProblem_names_the_env_var_and_the_slot_user_id_source_for_a_non_default_slot_without_a_user_id()
+    [Theory]
+    [InlineData("b-validator-1")]
+    [InlineData("c-validator-1")]
+    [InlineData("d-validator-1")]
+    public void FindProblem_accepts_a_non_default_slot_without_any_user_id_override(string slot)
     {
-        var env = new Dictionary<string, string?> { [EndpointDiscovery.ProfileEnv] = "c-validator-1" };
+        var env = new Dictionary<string, string?> { [EndpointDiscovery.ProfileEnv] = slot };
 
-        var problem = LocalnetConfiguration.FindProblem(env);
-
-        problem.Should().Contain(EndpointDiscovery.ValidatorUserIdEnv);
-        problem.Should().Contain("AUTH_C_VALIDATOR_1_VALIDATOR_USER_ID");
-        problem.Should().Contain("compose/modules/keycloak/env/c-validator-1/on/oauth2.env");
+        LocalnetConfiguration.FindProblem(env).Should().BeNull();
     }
 
     [Fact]
-    public void FindProblem_accepts_a_non_default_slot_once_the_user_id_is_set()
+    public void FindProblem_rejects_a_whitespace_validator_user_id_override()
     {
-        var env = new Dictionary<string, string?>
-        {
-            [EndpointDiscovery.ProfileEnv] = "c-validator-1",
-            [EndpointDiscovery.ValidatorUserIdEnv] = "some-user-id",
-        };
+        var env = new Dictionary<string, string?> { [EndpointDiscovery.ValidatorUserIdEnv] = "   " };
 
-        LocalnetConfiguration.FindProblem(env).Should().BeNull();
+        LocalnetConfiguration.FindProblem(env).Should().NotBeNull();
     }
 
     [Fact]

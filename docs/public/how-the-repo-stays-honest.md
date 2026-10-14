@@ -15,9 +15,9 @@ by CI rather than taken on trust, and every release is cut from a green run:
   `ubuntu-latest`, runs a leak check and a no-AI-workflows audit over the tree, then restores, builds
   (Release) and runs the unit tests against nuget.org alone.
 - **[`localnet.yaml`](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/.github/workflows/localnet.yaml)** — runs the real demo end to end on
-  `ubuntu-latest`, on demand (`workflow_dispatch`) and on every push to `main`. It starts
-  `peacefulstudio/canton-localnet` v0.8.4-1 with PQS, runs `REQUIRE_PQS=1 make run`, and tears
-  LocalNet down (`down --volumes`) before and after. Its runs are on the
+  `ubuntu-latest`, on demand (`workflow_dispatch`) and on every push to `main`. It boots LocalNet
+  v0.9.1-1 with PQS through the `peacefulstudio/canton-localnet` GitHub Action, runs
+  `REQUIRE_PQS=1 make run`, and the action tears LocalNet down (`down --volumes`) before and after. Its runs are on the
   [LocalNet workflow page](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/localnet.yaml).
 - **[`auto-tag-release.yaml`](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/.github/workflows/auto-tag-release.yaml)** — after `CI` and `LocalNet`
   are both green on the tip of `main`, tags `v<Version>` (the version in
