@@ -62,8 +62,8 @@ jobs:
       - name: Build the demo
         run: make build
 
-      - name: Boot a fresh LocalNet with PQS on a-validator-1 (canton-localnet v0.9.1-1)
-        uses: peacefulstudio/canton-localnet@872978f3caccd5429e98fe5f7516116a2311b874 # v0.9.1-1
+      - name: Boot a fresh LocalNet with PQS on a-validator-1 (canton-localnet v0.9.3-1)
+        uses: peacefulstudio/canton-localnet@3773c156c6d0abccbaf112fd32cdd79d13b5ab4c # v0.9.3-1
         with:
           validators: a
           pqs: 'true'
@@ -107,4 +107,4 @@ jobs:
 
       - name: Tear down LocalNet, volumes included
         if: always()
-        uses: peacefulstudio/canton-localnet/teardown@872978f3caccd5429e98fe5f7516116a2311b874 # v0.9.1-1
+        uses: peacefulstudio/canton-localnet/teardown@3773c156c6d0abccbaf112fd32cdd79d13b5ab4c # v0.9.3-1
