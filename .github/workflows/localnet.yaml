@@ -73,8 +73,9 @@ jobs:
         run: |
           set -euo pipefail
           for _ in $(seq 1 150); do
-            if docker logs pqs-a-validator-1 2>&1 | grep -q "Contract filter"; then
-              docker logs pqs-a-validator-1 2>&1 | grep -m 1 "Contract filter"
+            filter_line="$(docker logs pqs-a-validator-1 2>&1 | awk '/Contract filter/ && !seen { print; seen = 1 }' || true)"
+            if [ -n "${filter_line}" ]; then
+              echo "${filter_line}"
               exit 0
             fi
             sleep 2
