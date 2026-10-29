@@ -29,7 +29,11 @@ dotnet restore && dotnet build
 dotnet test
 ```
 
-You'll need the [.NET SDK](https://dotnet.microsoft.com/download) — install the version pinned in this repo's `global.json`.
+You'll need:
+
+- the [.NET SDK](https://dotnet.microsoft.com/download) — install the version pinned in this repo's `global.json`;
+- `dpm` `>= 1.0.20` (CI pins `1.0.22`) and the Daml SDK named by `sdk-version` in `daml/daml.yaml`, because `dotnet build` runs `dpm build` to compile `daml/` into a DAR. The install commands are in [Quickstart details](docs/public/quickstart-details.md);
+- a JDK `17+` only for `-p:DamlCodegenMode=Dpm`; the default `Standalone` mode needs none.
 
 `dotnet test` runs the unit tests, which need no external services. The
 end-to-end round-trip the demo performs (`make run` / `dotnet run --project
