@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 45
     env:
       DPM_INSTALLER_VERSION: '3.6.0'
+      DPM_LAUNCHER_VERSION: '1.0.22'
       DAML_SDK_VERSION: '3.6.0'
     steps:
       - name: Checkout
@@ -36,34 +37,19 @@ jobs:
           set -euo pipefail
           curl -sSL https://get.digitalasset.com/install/install.sh | sh -s -- "${DPM_INSTALLER_VERSION}"
           echo "${HOME}/.dpm/bin" >> "${GITHUB_PATH}"
-          "${HOME}/.dpm/bin/dpm" install "${DAML_SDK_VERSION}"
-
-      - name: Build the demo DAR
-        working-directory: daml
-        run: |
-          set -euo pipefail
-          dpm build
-          ls -l .daml/dist/
-
-      - name: Regenerate the C# bindings and fail on drift
-        run: |
-          set -euo pipefail
-          dpm --version
-          grep -m 1 'dpm-codegen-cs' codegen/daml.yaml
-          bash scripts/codegen.sh
-          cat "${DPM_HOME:-${HOME}/.dpm}/cache/components/ghcr.io/peacefulstudio/dpm-codegen-cs/.pinned-uri"
-          if [ -n "$(git status --porcelain -- src/MiniDemo.Contracts/Generated/)" ]; then
-            git status --short
-            git diff --stat -- src/MiniDemo.Contracts/Generated/
-            echo "::error::Committed C# bindings differ from a fresh dpm codegen-cs run; run scripts/codegen.sh and commit the result"
+          dpm="${HOME}/.dpm/bin/dpm"
+          installed="$("${dpm}" --version | awk '/^version:/ {print $2; exit}')"
+          if [[ "${installed}" != "${DPM_LAUNCHER_VERSION}" ]]; then
+            echo "::error::dpm launcher '${installed:-<none>}' does not match the pinned ${DPM_LAUNCHER_VERSION}"
             exit 1
           fi
+          "${dpm}" install "${DAML_SDK_VERSION}"
 
-      - name: Build the demo
-        run: make build
+      - name: Build the demo, DAR and bindings included
+        run: dotnet build src/MiniDemo/MiniDemo.csproj
 
-      - name: Boot a fresh LocalNet with PQS on a-validator-1 (canton-localnet v0.9.3-1)
-        uses: peacefulstudio/canton-localnet@3773c156c6d0abccbaf112fd32cdd79d13b5ab4c # v0.9.3-1
+      - name: Boot a fresh LocalNet with PQS on a-validator-1 (canton-localnet v0.9.4-1)
+        uses: peacefulstudio/canton-localnet@7f5abf8f479b4a3c68db64b7f626ab3bc505cc6f # v0.9.4-1
         with:
           validators: a
           pqs: 'true'
@@ -86,10 +72,21 @@ jobs:
       - name: Run the demo with PQS required
         run: |
           set -uo pipefail
-          REQUIRE_PQS=1 make run 2>&1 | tee "${RUNNER_TEMP}/demo.log"
+          set +e
+          dotnet run --project src/MiniDemo -- --require-pqs 2>&1 | tee "${RUNNER_TEMP}/demo.log"
           exit_code="${PIPESTATUS[0]}"
+          set -e
+          case "${exit_code}" in
+            0) meaning='demo completed on every transport and PQS projected everything' ;;
+            1) meaning='LocalNet unreachable or a ledger operation failed' ;;
+            65) meaning='cross-transport verification failed' ;;
+            69) meaning='PQS fell short of full projection (--require-pqs)' ;;
+            75) meaning='LocalNet unresponsive' ;;
+            130) meaning='interrupted' ;;
+            *) meaning='unexpected exit code' ;;
+          esac
           {
-            echo "### Demo exit code \`${exit_code}\`"
+            echo "### Demo exit code \`${exit_code}\`: ${meaning}"
             echo ""
             grep PQS "${RUNNER_TEMP}/demo.log" | sed 's/^/    /' || true
           } >> "${GITHUB_STEP_SUMMARY}"
@@ -106,6 +103,24 @@ jobs:
             echo "::endgroup::"
           done
 
+      - name: Search scribe logs for unknown Daml packages
+        if: failure()
+        run: |
+          set -uo pipefail
+          matches="$(docker logs pqs-a-validator-1 2>&1 | grep -i 'unknown Daml package' || true)"
+          {
+            echo "### Scribe \`unknown Daml package\` search"
+            echo ""
+            if [ -n "${matches}" ]; then
+              echo "Found $(printf '%s\n' "${matches}" | wc -l) matching line(s); first five:"
+              echo ""
+              printf '%s\n' "${matches}" | head -5 | sed 's/^/    /'
+            else
+              echo "No matches."
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"
+          printf '%s\n' "${matches}"
+
       - name: Tear down LocalNet, volumes included
         if: always()
-        uses: peacefulstudio/canton-localnet/teardown@3773c156c6d0abccbaf112fd32cdd79d13b5ab4c # v0.9.3-1
+        uses: peacefulstudio/canton-localnet/teardown@7f5abf8f479b4a3c68db64b7f626ab3bc505cc6f # v0.9.4-1
