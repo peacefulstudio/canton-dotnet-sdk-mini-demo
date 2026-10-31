@@ -23,6 +23,8 @@
     <PackageReference Include="Canton.Ledger.Rest.Client" />
     <PackageReference Include="Canton.Ledger.Kernel" />
     <PackageReference Include="Canton.Ledger.Pqs.Client" />
+    <PackageReference Include="Canton.Ledger.OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <PackageReference Include="Npgsql" />
     <PackageReference Include="Peaceful.Canton.Localnet.Testing" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />

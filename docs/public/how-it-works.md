@@ -16,7 +16,7 @@ flowchart TB
         app["Program.cs<br/>console app"]
     end
 
-    subgraph gen["⚙️  Generated (committed to git)"]
+    subgraph gen["⚙️  Generated at build time"]
         bindings["MiniDemo.Contracts<br/>Instrument · Asset · AssetTransferFactory · AssetTransferInstruction<br/>TryCreateAsync / MintByKeyCommand / TotalSupplyByKeyCommand"]
     end
 
@@ -37,7 +37,7 @@ flowchart TB
         pg["PQS Postgres<br/>read model"]
     end
 
-    daml -->|"dpm codegen-cs"| bindings
+    daml -->|"dotnet build"| bindings
     app --> bindings
     bindings --> splice
     app --> splice
@@ -65,46 +65,58 @@ Both client packages register the *same* abstractions — `ILedgerClient`, `ILed
 `ILedgerWriter`, `ILedgerStreamer` and `ICantonLedgerClient` — so which wire a call travels down is a
 composition-root decision, not an application one.
 
-There are exactly two stages: a **build-time** codegen step that you run once (and re-run when the
-contract changes), and a **run-time** transfer against LocalNet.
+There are exactly two stages: a **build-time** codegen step that runs inside `dotnet build`, and a
+**run-time** transfer against LocalNet.
 
 ## Stage 1 — Codegen: Daml → C#
 
-`scripts/codegen.sh` compiles the Daml package to a `.dar`, then hands that archive to
-`dpm codegen-cs`. The codegen toolchain is **pulled lazily as a public OCI component** — there is no
-manual `oras` step and no host .NET runtime required for the emitter itself; you only need `dpm` and
-a JDK.
+`dotnet build` does the whole job. `MiniDemo.Contracts` references the `Daml.Codegen.CSharp.MSBuild` package
+and one `<DamlProject Include="../../daml" />` item. On every build the package compiles the Daml package
+to a `.dar` with `dpm build`, decodes the archive, and emits the C# bindings under
+`src/MiniDemo.Contracts/obj/<Configuration>/net10.0/DamlGenerated/`, where they compile into the project.
+Nothing generated is committed, so a fresh clone builds with no codegen step.
 
 ```mermaid
 flowchart LR
-    A["daml/MiniDemo/Asset.daml"] -->|"dpm build"| B["canton-mini-demo-h03254a5ede8d-0.1.0.dar"]
-    subgraph OCI["dpm codegen-cs · OCI component (ghcr.io, pulled on first use)"]
-        direction LR
-        J["JVM helper<br/>daml-lf-archive<br/>DAR → canonical AST"] --> R["Roslyn emitter<br/>AST → C#"]
-    end
-    B -->|"--dar"| J
-    R --> D["src/MiniDemo.Contracts/Generated/*.cs<br/>(committed)"]
+    A["daml/daml/MiniDemo/Asset.daml"] -->|"dpm build"| B["daml.dar"]
+    B --> S["Standalone (default)<br/>bundled .NET decoder + Roslyn emitter"]
+    B --> P["Dpm<br/>dpm codegen-cs · JVM helper + Roslyn emitter"]
+    S --> D["obj/…/DamlGenerated/*.cs"]
+    P --> D
 ```
 
-- **`dpm build`** (uses `daml/daml.yaml`, `sdk-version 3.6.0`, `--target=2.3`) emits `daml/.daml/dist/canton-mini-demo-h03254a5ede8d-0.1.0.dar`. The package name carries a
+- **`dpm build`** (uses `daml/daml.yaml`, `sdk-version 3.6.0`, `--target=2.3`) emits the DAR. The package name carries a
   content hash that `scripts/compute-package-name.sh` derives from `daml/daml/**`, `daml.yaml`'s
-  non-name fields, and every `*.dar` under `daml/dars/**` (the data-dependencies), then rewrites
-  into `daml/daml.yaml` on every `scripts/codegen.sh` run, so editing the Daml source, editing a
-  vendored DAR at the same path, or regenerating always produces a package with a fresh identity
-  instead of colliding with a previously uploaded DAR of the same name and version;
-  re-running `make codegen` on an unchanged source leaves the committed name unchanged.
-- **`dpm codegen-cs --dar <dar> --out Generated/ --namespace MiniDemo.Asset`** (uses `codegen/daml.yaml`,
-  which pins the OCI component by tag **and** digest) runs the JVM helper to decode the DAR into a
-  canonical AST, then a Roslyn-based emitter writes idiomatic C# records. Output is written to a temp
-  dir and atomically swapped in, so a failed run never leaves a half-written `Generated/`.
-- The generated bindings are **committed to git**, so a fresh clone can `dotnet build` immediately —
-  no codegen required to compile.
+  non-name fields, and every `*.dar` under `daml/dars/**` (the data-dependencies). `make package-name` rewrites it
+  into `daml/daml.yaml`, so editing the Daml source or a vendored DAR gives a package a fresh identity
+  instead of colliding with a previously uploaded DAR of the same name and version. CI fails when the
+  committed name differs from the script's output, and `dotnet build` never writes into the repository.
+- **The namespace** comes from `<DamlNamespace>MiniDemo.Asset</DamlNamespace>` in the project file. Dependency packages are not generated
+  (`DamlIncludeDependencies` stays off): the Splice types come from the `Splice.Api.Token.Holding.V2` and
+  `Splice.Api.Token.Transfer.Instruction.V2` NuGet packages.
+- **The DAR** is also copied next to the built assembly, which is where the demo finds the archive it uploads.
 
-> **Why a JVM helper?** Decoding a `.dar` correctly across Daml-LF versions (per-version decoders,
-> package-hash computation, `Dar[Ast.Package]` structure) is exactly what Digital Asset's
-> `daml-lf-archive` library already does. The codegen reuses it rather than re-implementing a
-> LF-protobuf parser, and it runs only at build time — it is **not** a runtime dependency of your app
-> or the generated NuGets.
+### Two ways to generate the bindings
+
+Both modes live in the same package and are switched by `DamlCodegenMode`. They generate the same C#.
+
+```bash
+dotnet build MiniDemo.slnx                              # Standalone (default)  [make build]
+dotnet build MiniDemo.slnx -p:DamlCodegenMode=Dpm       # dpm codegen-cs        [make build-dpm]
+```
+
+| Mode | Runs | Needs |
+|------|------|-------|
+| `Standalone` (default) | the .NET DAR decoder and emitter bundled in the package | the .NET SDK and `dpm` (to build the DAR); no JDK |
+| `Dpm` | `dpm codegen-cs`, pinned to the package's version and bundle digest | `dpm` `>= 1.0.20` and a JDK on `PATH` |
+
+Choose `Dpm` when `Standalone` cannot read your DAR, for example one built for Daml-LF 1.x such as Daml
+Finance's. `Standalone` reads Daml-LF 2.1 to 2.4 and 2.5-rc1; a DAR outside that range fails the build with a
+message pointing at `Dpm`.
+
+> **Why a JVM helper in `Dpm` mode?** Decoding a `.dar` across Daml-LF versions is what Digital Asset's
+> `daml-lf-archive` library already does, so `dpm codegen-cs` reuses it. It runs only at build time and is
+> **not** a runtime dependency of your app or the generated NuGets.
 
 ## Stage 2 — Runtime: issue → propose → accept, across both transports
 

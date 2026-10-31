@@ -5,7 +5,7 @@ A tour of the C# in `src/MiniDemo/`: how the transport is chosen, how commands a
 Back to the [README](../../README.md).
 
 `Program.cs` is a thin entry point that reads the environment, prints the target-endpoint banner,
-builds one service provider per transport, and hands off to `MiniDemoRunner`, which walks the
+starts the OTLP trace export when `OTEL_EXPORTER_OTLP_ENDPOINT` is set, builds one service provider per transport, and hands off to `MiniDemoRunner`, which walks the
 issuance and the two-step transfer step by step; `AssetAcsQuery` owns the keyed ACS query,
 `HoldingQuery` the `IHolding` interface query (with each holding's lock) and the typed `Disclosure`
 read that feeds the acceptance, and `ExerciseOutcomeExtensions` the `Unwrap` helper. A transport is nothing more than
@@ -15,8 +15,8 @@ banner and classifies "LocalNet unreachable" socket errors into a friendly hint 
 ledger exits `1` with guidance, never a silent no-op); `LedgerEndpoint` resolves both addresses — the
 gRPC one from `CANTON_LOCALNET_LEDGER_GRPC` (default `http://localhost:11901`), the JSON Ledger API
 one from the same `EndpointDiscovery` the bootstrap already uses, so the REST transport needs no new
-environment variable; and `DarLocator` finds the built `.dar` (`MINI_DEMO_DAR` if set, else the most
-recent archive under `daml/.daml/dist/`). Each console section maps to an SDK concept:
+environment variable; and `DarLocator` finds the built `.dar` (`MINI_DEMO_DAR` if set, else the `.dar` that
+`dotnet build` copies next to the assembly). Each console section maps to an SDK concept:
 
 | Console section | What it exercises | Key SDK surface |
 |-----------------|-------------------|-----------------|
@@ -89,7 +89,7 @@ and reaching it over HTTP is the registration call:
 `HttpAddress` is the **JSON Ledger API** base URL — not `GrpcAddress`, and not the gRPC port.
 `UserId` is optional: left unset, the participant derives it from the token; the demo passes
 `fixture.ValidatorUserId`, the same ledger user it granted act-as rights to during bootstrap. Both
-transport packages ship on the same `0.7.0` line, pinned centrally (see
+transport packages ship on the same `0.7.1` line, pinned centrally (see
 [Pinned versions](project-layout-and-versions.md#pinned-versions)).
 
 Either call registers one adapter resolvable as the same five service types — `ICantonLedgerClient`,

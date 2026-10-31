@@ -6,10 +6,8 @@
 # base name plus a 12-hex-char SHA-256 prefix (letter-prefixed so it satisfies
 # Daml's package-name grammar) over every file under daml/daml/, over
 # daml.yaml's non-name fields, and over every *.dar under daml/dars/ (the
-# data-dependencies). scripts/codegen.sh calls this to keep the committed
-# name in sync with the Daml source and the vendored DARs on every
-# regeneration, and CI fails when the two
-# have drifted apart.
+# data-dependencies). `make package-name` writes it into daml/daml.yaml, and
+# CI fails when the committed name differs from this output.
 
 set -euo pipefail
 

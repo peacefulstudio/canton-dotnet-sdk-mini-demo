@@ -1,6 +1,6 @@
 # The Daml contract and the C# generated from it
 
-The Daml model in `daml/` and the C# object model `dpm codegen-cs` emits from it.
+The Daml model in `daml/` and the C# object model the `Daml.Codegen.CSharp.MSBuild` package emits from it.
 
 Back to the [README](../../README.md).
 
@@ -100,8 +100,9 @@ without knowing the `Asset` template.
 
 ## What codegen produces
 
-From that one Daml module, `dpm codegen-cs` emits a small, idiomatic C# object model under
-`src/MiniDemo.Contracts/Generated/MiniDemo/Asset/` (namespace `MiniDemo.Asset`, named after the Daml module):
+From that one Daml module, the package's emitter (Standalone by default, `dpm codegen-cs` with
+`-p:DamlCodegenMode=Dpm`) generates a small, idiomatic C# object model under
+`src/MiniDemo.Contracts/obj/<Configuration>/net10.0/DamlGenerated/MiniDemo/Asset/` (namespace `MiniDemo.Asset`, named after the Daml module):
 
 - **`record Instrument(Party Issuer, string Name)`** and
   **`record Asset(Party Issuer, Party Owner, string Name, decimal Amount, Lock? Lock)`** — the templates

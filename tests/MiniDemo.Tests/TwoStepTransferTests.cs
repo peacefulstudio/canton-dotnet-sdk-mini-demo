@@ -558,7 +558,7 @@ public class TwoStepTransferTests
         Exercised("instruction-1", AssetTransferInstruction.TemplateId, ITransferInstruction.InterfaceId, "TransferInstruction_Accept", result.ToRecord());
 
     private static ExercisedEvent TotalSupplyExercised(decimal totalSupply) =>
-        Exercised("instrument-1", Instrument.TemplateId, null, "TotalSupply", new DamlNumeric(totalSupply, 10));
+        Exercised("instrument-1", Instrument.TemplateId, null, "TotalSupply", new DamlNumeric(totalSupply));
 
     private static ExercisedEvent Exercised(
         string contractId, Identifier templateId, Identifier? interfaceId, string choice, DamlValue result) =>

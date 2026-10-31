@@ -9,6 +9,19 @@ after a release takes a fourth identifier, for example `0.6.0-preview.3.1`.
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-10-29
+
+### Added
+
+- **Two ways to generate the bindings** — `dotnet build` now generates the C# bindings through the `Daml.Codegen.CSharp.MSBuild` package, and `dotnet build -p:DamlCodegenMode=Dpm` (`make build-dpm`) runs `dpm codegen-cs` instead. The default `Standalone` mode uses the decoder and emitter bundled in the package and needs no JDK; `Dpm` needs `dpm` `>= 1.0.20` and a JDK on `PATH`, and is the choice for a DAR `Standalone` cannot read, such as Daml-LF 1.x. Both modes generate the same bindings, and CI builds both. The README and the how-it-works guide show both commands. 🛠️
+- **One trace for the whole run** — with `OTEL_EXPORTER_OTLP_ENDPOINT` set, the demo exports its traces over OTLP: service `mini-demo`, the SDK's gRPC, JSON API and PQS spans, and one `mini-demo run` parent so they land in a single trace. With the variable unset nothing changes: same output, same exit codes. 🔭
+
+### Changed
+
+- **Bindings are generated at build time** — `src/MiniDemo.Contracts/Generated/`, `scripts/codegen.sh`, `scripts/codegen.ps1`, `codegen/daml.yaml` and `make codegen` are gone. `dotnet build` compiles `daml/` into a DAR with `dpm build` and emits the bindings under `obj/`, so a clean clone builds and runs with no JDK and no separate codegen step. The built `.dar` is copied next to the demo assembly, which is where `dotnet run` finds it. `make package-name` rewrites the content-addressed package name in `daml/daml.yaml`, and CI fails when the committed name is stale. The demo's behavior and console output are unchanged. 🧹
+- **Canton .NET SDK `0.7.1`** — every `Daml.*` and `Canton.Ledger.*` package, the `Daml.Codegen.CSharp.MSBuild` package (whose `Dpm` mode pins the `dpm-codegen-cs` component by digest) and the Splice `holding-v2` and `transfer-instruction-v2` C# bindings (`1.0.0.20`) move to the `0.7.1` line together. The demo's behavior and console output are unchanged. ⬆️
+- **LocalNet `v0.9.4-1`** — the LocalNet testing package (`0.9.4.1`) and the CI LocalNet pin move to `v0.9.4-1`, which carries Splice 0.9.4 (Canton 3.6.4, protocol version 36) and publishes the OTLP collector ports to the host. The README now states that the demo is tested against this LocalNet or later. A LocalNet stack created before `v0.9.3-1` needs `canton-localnet down --volumes` before it moves to protocol version 36.
+
 ## [0.7.0] — 2026-10-14
 
 **The stable release on Canton 3.6**, on the **Canton .NET SDK 0.7.0**. The demo's behavior and console output are unchanged from `0.7.0-preview.1`. The packages, the `dpm-codegen-cs` component and the Splice token-standard bindings move to their stable versions.
@@ -238,7 +251,8 @@ Needs a Canton **LocalNet 0.6.11** up (JSON `:11975` / gRPC `:11901`) and the `d
 
 📖 Start at the [README](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/README.md) — it walks the whole Daml → codegen → run loop.
 
-[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.0-preview.1...v0.7.0
 [0.7.0-preview.1]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0...v0.7.0-preview.1
 [0.6.0]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0-preview.4...v0.6.0

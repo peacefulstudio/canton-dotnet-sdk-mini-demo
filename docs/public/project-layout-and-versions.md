@@ -12,15 +12,10 @@ daml/
   daml/MiniDemo/Asset.daml        # Instrument, Asset (IHolding), AssetTransferFactory, AssetTransferInstruction
   dars/                           # Splice token-standard DARs: holding-v2, metadata-v1, transfer-instruction-v2
   test/                           # Daml Script tests: accept, reject, withdraw, late accept, partial transfer (plus the shared setup script, which `dpm test` also reports)
-codegen/
-  daml.yaml                       # codegen-only project — pins the dpm-codegen-cs OCI component
 scripts/
-  codegen.sh                      # dpm build → dpm codegen-cs (OCI) → atomic swap into Generated/
-  codegen.ps1                     # Windows (PowerShell) twin of codegen.sh
   compute-package-name.sh         # derives the hash-suffixed Daml package name that daml/daml.yaml pins
 src/
-  MiniDemo.Contracts/             # generated C# bindings (committed) + csproj
-    Generated/MiniDemo/Asset/     #   Instrument*.cs, Asset.cs, AssetTransferFactory.cs, AssetTransferInstruction.cs, PackageRegistration_<hash>.cs
+  MiniDemo.Contracts/             # csproj that builds daml/ into a DAR and generates the C# bindings at build time (obj/<Configuration>/net10.0/DamlGenerated/MiniDemo/Asset/)
   MiniDemo/                       # the console CLI
     Program.cs                    #   entry point: read env → check configuration → print banner → MiniDemoRunner
     LocalnetConfiguration.cs      #   up-front check: known profile, complete endpoint defaults (exit 78)
@@ -36,6 +31,7 @@ src/
     LocalnetSlot.cs               #   a LocalnetProfile as its canton-localnet slot name (c-validator-1, C_VALIDATOR_1)
     LocalnetPreflight.cs          #   startup endpoint banner + "unreachable" socket-error classifier
     LedgerEndpoint.cs             #   resolve the gRPC (env, default :11901) and JSON Ledger API addresses
+    Tracing.cs                    #   opt-in OTLP trace export (OTEL_EXPORTER_OTLP_ENDPOINT) and the `mini-demo run` parent activity
     DarLocator.cs                 #   locate the built .dar (MINI_DEMO_DAR or newest build output); a missing one exits 78
     DemoExitCode.cs               #   maps run failures to exit codes 0 / 1 / 65 / 69 / 75 / 78 / 130
     DemoVerificationException.cs  #   the demo's own failed assertion (exit 65)
@@ -55,8 +51,8 @@ Directory.Build.props             # shared build settings and the demo <Version>
 Directory.Packages.props          # central SDK package versions
 NuGet.config                      # nuget.org only — no private feed
 global.json                       # pins the .NET SDK (10.0.100 minimum, rolls forward to the latest installed 10.x)
-coverage.settings.xml             # code-coverage settings for the test run
-Makefile                          # codegen / daml-test / build / run / clean
+coverage.settings.xml             # code-coverage settings
+Makefile                          # package-name / daml-test / build / build-dpm / run / clean
 CHANGELOG.md                      # release notes
 CONTRIBUTING.md                   # how to contribute
 CODE_OF_CONDUCT.md                # community conduct
@@ -65,9 +61,8 @@ LICENSE                           # Apache-2.0
 NOTICE                            # attribution notice
 ```
 
-Two `daml.yaml` files exist because `dpm` rejects a single file that sets both `sdk-version` and
-`components`: `daml/daml.yaml` drives `dpm build`, and `codegen/daml.yaml` pins the codegen
-component for `dpm codegen-cs`.
+`daml/daml.yaml` drives `dpm build`. The `Daml.Codegen.CSharp.MSBuild` package runs that build and generates the
+bindings from the DAR; in `Dpm` mode it pins the `dpm-codegen-cs` OCI component itself, by version and digest.
 
 
 ## Pinned versions
@@ -77,18 +72,20 @@ component for `dpm codegen-cs`.
 | Daml SDK (`dpm install`) | `3.6.0` |
 | Daml-LF target (`--target`) | `2.3` |
 | `dpm` launcher | `>= 1.0.20` (pin the installer to `3.6.0`, which lands `1.0.22`) |
-| `dpm-codegen-cs` OCI component | `0.7.0` (pinned by digest) |
-| `Daml.Runtime` | `0.7.0` |
-| `Daml.Ledger.Abstractions` | `0.7.0` |
-| `Canton.Ledger.Grpc.Client` | `0.7.0` |
-| `Canton.Ledger.Rest.Client` | `0.7.0` |
-| `Canton.Ledger.Kernel` | `0.7.0` |
-| `Canton.Ledger.Pqs.Client` | `0.7.0` |
+| `Daml.Codegen.CSharp.MSBuild` | `0.7.1` (its `Dpm` mode pins the `dpm-codegen-cs` component `0.7.1` by digest) |
+| `Daml.Runtime` | `0.7.1` |
+| `Daml.Ledger.Abstractions` | `0.7.1` |
+| `Canton.Ledger.Grpc.Client` | `0.7.1` |
+| `Canton.Ledger.Rest.Client` | `0.7.1` |
+| `Canton.Ledger.Kernel` | `0.7.1` |
+| `Canton.Ledger.Pqs.Client` | `0.7.1` |
+| `Canton.Ledger.OpenTelemetry` | `0.7.1` |
+| `OpenTelemetry.Exporter.OpenTelemetryProtocol` | `1.20.0` |
 | `Npgsql` | `10.0.3` |
-| `Splice.Api.Token.Holding.V2` | `1.0.0.19` |
-| `Splice.Api.Token.Transfer.Instruction.V2` | `1.0.0.19` |
-| `Canton.Ledger.Testing` | `0.7.0` (test projects only) |
-| `Peaceful.Canton.Localnet.Testing` | `0.9.1.1` |
+| `Splice.Api.Token.Holding.V2` | `1.0.0.20` |
+| `Splice.Api.Token.Transfer.Instruction.V2` | `1.0.0.20` |
+| `Canton.Ledger.Testing` | `0.7.1` (test projects only) |
+| `Peaceful.Canton.Localnet.Testing` | `0.9.4.1` |
 | `Microsoft.Extensions.DependencyInjection` | `10.0.13` |
 | `Microsoft.Extensions.Logging.Console` | `10.0.13` |
 | .NET SDK | `10.0` |

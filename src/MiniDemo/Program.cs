@@ -32,6 +32,8 @@ var jsonApiAddress = LedgerEndpoint.ResolveJsonApi(env);
 var pqsConnectionString = PqsConnectionString.Resolve(EndpointDiscovery.ResolveProfile(env), env);
 LocalnetPreflight.WriteTargetSummary(env, Console.Out);
 
+using var tracerProvider = Tracing.Start(env);
+
 using var loggerFactory = LoggerFactory.Create(builder =>
     builder.AddSimpleConsole(options => options.SingleLine = true).SetMinimumLevel(LogLevel.Warning));
 
@@ -41,6 +43,7 @@ return await DemoExitCode.ForRunAsync(RunDemoAsync, Console.Error, ct);
 
 async Task RunDemoAsync(CancellationToken cancellationToken)
 {
+    using var run = Tracing.StartRun();
     var accessToken = await fixture.TokenProvider.GetAccessTokenAsync(cancellationToken);
 
     await using var grpcServices = new ServiceCollection()

@@ -54,13 +54,16 @@ public class DarLocatorTests
     }
 
     [Fact]
-    public void Locate_reports_a_missing_build_when_nothing_is_configured_and_no_dist_folder_exists()
+    public void Locate_reports_a_missing_build_when_nothing_is_configured_and_no_dar_sits_beside_the_assembly()
     {
         var emptyRoot = Directory.CreateTempSubdirectory().FullName;
 
         var lookup = DarLocator.Locate(null, emptyRoot);
 
-        lookup.Problem.Should().Contain("Could not locate a built .dar").And.Contain("scripts/codegen.sh");
+        lookup.Path.Should().BeNull();
+        lookup.Problem.Should().Contain("Could not locate a built .dar")
+            .And.Contain("dotnet build")
+            .And.NotContain("codegen.sh");
     }
 
     [Fact]
@@ -76,13 +79,29 @@ public class DarLocatorTests
     }
 
     [Fact]
-    public void Locate_finds_a_dar_in_a_dist_folder_above_the_base_directory()
+    public void Locate_finds_the_dar_beside_the_assembly()
     {
-        var root = Directory.CreateTempSubdirectory().FullName;
-        var dist = Directory.CreateDirectory(System.IO.Path.Combine(root, "daml", ".daml", "dist")).FullName;
-        File.WriteAllText(System.IO.Path.Combine(dist, "demo.dar"), string.Empty);
-        var nested = Directory.CreateDirectory(System.IO.Path.Combine(root, "bin", "Debug")).FullName;
+        var baseDirectory = Directory.CreateTempSubdirectory().FullName;
+        var dar = System.IO.Path.Combine(baseDirectory, "daml.dar");
+        File.WriteAllText(dar, string.Empty);
 
-        DarLocator.Locate(null, nested).Path.Should().Be(System.IO.Path.Combine(dist, "demo.dar"));
+        DarLocator.Locate(null, baseDirectory).Path.Should().Be(dar);
+    }
+
+    [Fact]
+    public void Locate_prefers_the_configured_dar_over_the_one_beside_the_assembly()
+    {
+        var baseDirectory = Directory.CreateTempSubdirectory().FullName;
+        File.WriteAllText(System.IO.Path.Combine(baseDirectory, "daml.dar"), string.Empty);
+        var configured = System.IO.Path.Combine(Directory.CreateTempSubdirectory().FullName, "other.dar");
+        File.WriteAllText(configured, string.Empty);
+
+        DarLocator.Locate(configured, baseDirectory).Path.Should().Be(configured);
+    }
+
+    [Fact]
+    public void The_built_demo_carries_the_dar_the_msbuild_codegen_produced()
+    {
+        DarLocator.Locate(null, AppContext.BaseDirectory).Path.Should().EndWith("daml.dar");
     }
 }
