@@ -10,7 +10,22 @@
     <NoWarn>$(NoWarn);CS1574</NoWarn>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DamlNamespace>MiniDemo.Asset</DamlNamespace>
+  </PropertyGroup>
+
   <ItemGroup>
+    <DamlProject Include="../../daml" />
+  </ItemGroup>
+
+  <Target Name="CopyDamlArchiveToOutput" AfterTargets="DamlBuildProject" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <Content Include="$(_DamlProjectDar)" Link="$([System.IO.Path]::GetFileName('$(_DamlProjectDar)'))" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Daml.Codegen.CSharp.MSBuild" PrivateAssets="all" />
     <PackageReference Include="Daml.Runtime" />
     <PackageReference Include="Daml.Ledger.Abstractions" />
     <PackageReference Include="Splice.Api.Token.Holding.V2" />

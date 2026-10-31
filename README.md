@@ -4,9 +4,9 @@
 
 <p>
   <a href="https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/ci.yaml"><img alt="CI" src="https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/ci.yaml/badge.svg"></a>
-  <img alt="Tested on" src="https://img.shields.io/badge/tested%20on-Linux%20%7C%20Windows-2ea44f">
+  <img alt="Tested on" src="https://img.shields.io/badge/tested%20on-Linux-2ea44f">
   <img alt=".NET 10" src="https://img.shields.io/badge/.NET-10.0-512BD4">
-  <img alt="Canton SDK" src="https://img.shields.io/badge/Canton%20.NET%20SDK-0.7.0-0A7BBB">
+  <img alt="Canton SDK" src="https://img.shields.io/badge/Canton%20.NET%20SDK-0.7.1-0A7BBB">
   <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue">
 </p>
 
@@ -16,7 +16,7 @@ If you want to build C# applications that talk to a Canton ledger and Daml contr
 
 ## What you will see working
 
-- **Codegen.** A Daml contract becomes idiomatic, strongly-typed C# with `dpm codegen-cs`.
+- **Codegen.** A Daml contract becomes idiomatic, strongly-typed C# during `dotnet build`, through the `Daml.Codegen.CSharp.MSBuild` package. No JDK is needed.
 - **Command submission.** Create contracts, exercise choices by contract key and through a Daml interface, and attach a disclosed contract.
 - **Queries and update streams.** Read the active contract set back, with each contract's key and through a Daml interface, and observe a transaction on the offset-bounded update stream.
 - **Transport independence.** The same generated bindings and the same call sites run over gRPC and JSON/REST. Alice proposes over gRPC, bob accepts over REST, and each transport then reads back what the other wrote.
@@ -29,7 +29,7 @@ You write **Daml** and a small **C# app**. Codegen bridges the two, and the SDK 
 
 ```mermaid
 flowchart LR
-    daml["Asset.daml<br/>Daml templates"] -->|"dpm codegen-cs"| bindings["MiniDemo.Contracts<br/>generated C# (committed)"]
+    daml["Asset.daml<br/>Daml templates"] -->|"dotnet build<br/>Daml.Codegen.CSharp.MSBuild"| bindings["MiniDemo.Contracts<br/>generated C# (at build time)"]
     app["Program.cs<br/>console app"] --> bindings
     app --> sdk["Canton .NET SDK<br/>Daml.Runtime · Canton.Ledger.*"]
     sdk -->|"gRPC"| node["Canton LocalNet<br/>participant node"]
@@ -52,25 +52,42 @@ The SDK is a thin, codegen-aware client over the Ledger API, with no in-process 
 
 ## Quickstart
 
-You need the **.NET SDK `>= 10.0.100`**, **`dpm` `>= 1.0.20`**, a **JDK 17+** and a running **Canton LocalNet** from [`canton-localnet`](https://github.com/peacefulstudio/canton-localnet) (`make up`; this repo does not start one). The demo is tested against LocalNet `v0.9.1-1` (Splice 0.9.1, Canton 3.6.1) or later. Docker and about 16 GB of RAM are needed for LocalNet. No private feed or credential is needed to build.
+You need the **.NET SDK `>= 10.0.100`**, **`dpm` `>= 1.0.20`** (it builds the Daml package into a DAR) and a running **Canton LocalNet** from [`canton-localnet`](https://github.com/peacefulstudio/canton-localnet) (`make up`, or `make up PQS=true` for section 6 and `--require-pqs`; this repo does not start one). The demo is tested against LocalNet `v0.9.4-1` (Splice 0.9.4, Canton 3.6.4) or later. Docker and about 16 GB of RAM are needed for LocalNet. No private feed or credential is needed to build.
 
 ```bash
 curl -sSL https://get.digitalasset.com/install/install.sh | sh -s -- 3.6.0
 export PATH="$HOME/.dpm/bin:$PATH"
 dpm install 3.6.0
 
-./scripts/codegen.sh                 # Daml → C# bindings                    [make codegen]
-dotnet build MiniDemo.slnx           # build the solution                    [make build]
+dotnet build MiniDemo.slnx           # Daml → DAR → C# bindings → solution   [make build]
 dotnet run --project src/MiniDemo    # run the demo against LocalNet         [make run]
 ```
 
-Against a stock local LocalNet no configuration is needed: every endpoint defaults to the `a-validator-1` slot, and the demo prints which endpoints it targets. On Windows, run `pwsh scripts/codegen.ps1` for the first step.
+Against a stock local LocalNet no configuration is needed: every endpoint defaults to the `a-validator-1` slot, and the demo prints which endpoints it targets. With PQS, LocalNet is ready once `docker logs pqs-a-validator-1 2>&1 | grep "Contract filter"` prints a line.
+
+### Two ways to generate the bindings
+
+Both go through the same `Daml.Codegen.CSharp.MSBuild` package, switched by its `DamlCodegenMode` property. Both generate the same C#.
+
+```bash
+dotnet build MiniDemo.slnx                              # Standalone (default)  [make build]
+dotnet build MiniDemo.slnx -p:DamlCodegenMode=Dpm       # dpm codegen-cs        [make build-dpm]
+```
+
+| Mode | Runs | Needs |
+|------|------|-------|
+| `Standalone` (default) | the .NET DAR decoder and emitter bundled in the package | the .NET SDK and `dpm` (to build the DAR); no JDK |
+| `Dpm` | `dpm codegen-cs`, pinned to the package's version and bundle digest | `dpm` `>= 1.0.20` and a JDK on `PATH` |
+
+Choose `Dpm` when `Standalone` cannot read your DAR, for example one built for Daml-LF 1.x such as Daml Finance's. `Standalone` reads Daml-LF 2.1 to 2.4 and 2.5-rc1, and a DAR outside that range fails the build with a message pointing at `Dpm`.
+
+To see every SDK span of one run (gRPC, JSON API and PQS) as a single trace, see [See the whole run as one trace](docs/public/quickstart-details.md#see-the-whole-run-as-one-trace).
 
 Prerequisites, configuration overrides, PQS and the full expected output are in [Quickstart details](docs/public/quickstart-details.md).
 
 ## Adopt this in your own app
 
-Add `Daml.Runtime`, `Canton.Ledger.Grpc.Client` and/or `Canton.Ledger.Rest.Client`, and `Canton.Ledger.Kernel` from nuget.org. Write your Daml, generate bindings with `dpm codegen-cs`, register the client (`AddCantonLedger(configuration)` for gRPC, `AddRestLedgerClient(configuration.GetSection("Canton:Rest"), configuration.GetSection("Canton:Auth"))` for JSON/REST), and submit commands through the generated `TryCreateAsync` and `Try…Async` extensions.
+Add `Daml.Runtime`, `Canton.Ledger.Grpc.Client` and/or `Canton.Ledger.Rest.Client`, and `Canton.Ledger.Kernel` from nuget.org. Write your Daml, reference `Daml.Codegen.CSharp.MSBuild` and point a `<DamlProject>` item at the folder holding your `daml.yaml` so `dotnet build` generates the bindings, register the client (`AddCantonLedger(configuration)` for gRPC, `AddRestLedgerClient(configuration.GetSection("Canton:Rest"), configuration.GetSection("Canton:Auth"))` for JSON/REST), and submit commands through the generated `TryCreateAsync` and `Try…Async` extensions.
 
 The demo's bootstrap helper, `Peaceful.Canton.Localnet.Testing`, is a dev-time tool and not a production dependency. See [Adopt this in your own app](docs/public/adopt-in-your-own-app.md) for the steps.
 
@@ -90,4 +107,4 @@ The demo's bootstrap helper, `Peaceful.Canton.Localnet.Testing`, is a dev-time t
 
 ## License
 
-Apache-2.0 © Peaceful Studio OÜ. Every hand-authored source file carries an `SPDX-License-Identifier: Apache-2.0` header; the committed generated bindings carry an `<auto-generated>` header instead.
+Apache-2.0 © Peaceful Studio OÜ. Every hand-authored source file carries an `SPDX-License-Identifier: Apache-2.0` header; the bindings generated at build time carry an `<auto-generated>` header instead.

@@ -9,11 +9,11 @@ Back to the [README](../../README.md).
 | Tool | Version | Why |
 |------|---------|-----|
 | **.NET SDK** | `>= 10.0.100` | builds and runs the app (`dotnet --version`) |
-| **dpm** (Daml Package Manager) | `>= 1.0.20` | `dpm codegen-cs` needs the `oci://` component syntax; `>= 1.0.20` verifies component digests on a cache hit |
-| **JDK** | `17+` | the codegen component runs a JVM helper to decode the DAR |
+| **dpm** (Daml Package Manager) | `>= 1.0.20` | `dotnet build` runs `dpm build` to compile `daml/` into a DAR; `Dpm` mode also runs `dpm codegen-cs`, which needs the `oci://` component syntax and, from `1.0.20`, verifies component digests on a cache hit |
+| **JDK** (`Dpm` mode only) | `17+` | `dpm codegen-cs` runs a JVM helper to decode the DAR; the default `Standalone` mode needs no JDK |
 | **Docker + Compose** | Docker `>= 27`, Compose `>= 2.27` | runs the Canton LocalNet stack (`make up`); budget ~16 GB RAM for it |
 | **Canton LocalNet** | running | the ledger the demo talks to — this repo does **not** start one |
-| **PQS** (optional) | `make up PQS=true` in `canton-localnet` | starts the scribe projector + Postgres read model for section 6; without it, section 6 detects the missing database instantly and moves on |
+| **PQS** (optional) | `make up PQS=true` in `canton-localnet` | starts the scribe projector + Postgres read model for section 6 (ready once `docker logs pqs-a-validator-1 2>&1 \| grep "Contract filter"` prints a line); without it, section 6 detects the missing database instantly and moves on |
 
 Install `dpm` and the pinned Daml SDK. Pin the installer to a specific release (`3.6.0` lands dpm
 launcher `1.0.22`) rather than riding `latest` — a moving target, and dpm `< 1.0.20` can reuse a
@@ -53,8 +53,13 @@ slot's validator ledger user id is the `AUTH_<SLOT>_VALIDATOR_USER_ID` entry (fo
 `AUTH_C_VALIDATOR_1_VALIDATOR_USER_ID`) in that repository's
 `compose/modules/keycloak/env/<slot>/on/oauth2.env`. The demo targets a **single-synchronizer**
 validator (one Daml module, one program). For a non-default slot the gRPC address still defaults to the
-`a-validator-1` port, so set `CANTON_LOCALNET_LEDGER_GRPC` (e.g. `http://localhost:13901` for
-`c-validator-1`). Every slot's validator ledger user id has a default in the `canton-localnet` testing
+`a-validator-1` port, so set `CANTON_LOCALNET_LEDGER_GRPC`. The port is the slot's two-digit prefix followed by `901`:
+
+| Slot | `sv-validator-1` | `a-validator-1` | `b-validator-1` | `c-validator-1` | `d-validator-1` |
+|---|---|---|---|---|---|
+| gRPC Ledger API | `http://localhost:10901` | `http://localhost:11901` | `http://localhost:12901` | `http://localhost:13901` | `http://localhost:14901` |
+
+Every slot's validator ledger user id has a default in the `canton-localnet` testing
 package, so `CANTON_LOCALNET_VALIDATOR_USER_ID` is only for a rotated id. An unknown `CANTON_LOCALNET_PROFILE` makes the demo stop before it touches the ledger and exit `78` (so does a missing built `.dar`, or a `MINI_DEMO_DAR` that points nowhere), as does `sv-validator-1` until you set its token URL, client id and client secret (it has no defaults for them).
 
 PQS follows the slot too: the demo reads the Postgres database `pqs-<slot>` (for example `pqs-c-validator-1`) on the same host, port and credentials as the default, or the connection string in `CANTON_LOCALNET_<SLOT>_PQS_CONNECTION_STRING`. `make up PQS=true` starts PQS for `a-validator-1` only, yet Postgres creates the `pqs-a-validator-1`, `pqs-b-validator-1`, `pqs-c-validator-1` and `pqs-sv-validator-1` databases. On b, c and sv that database exists but stays empty (no tables, no `active` function), so the read fails with SQLSTATE `42883` or `42P01`; `d-validator-1` has no PQS database at all (SQLSTATE `3D000`). The demo treats all of these alike: section 6 reports PQS as not available and moves on (or exits `69` under `--require-pqs`).
@@ -65,27 +70,34 @@ PQS follows the slot too: the demo reads the Postgres database `pqs-<slot>` (for
 
 ## Run it
 
-Three commands (each also wrapped by a `make` target):
+Two commands (each also wrapped by a `make` target):
 
 ```bash
-./scripts/codegen.sh                 # 1. dpm build → dpm codegen-cs → (re)generate C# bindings   [make codegen]
-dotnet build MiniDemo.slnx           # 2. build the .NET solution                                  [make build]
-dotnet run --project src/MiniDemo    # 3. run the integration test (needs a running LocalNet; env vars optional) [make run]
+dotnet build MiniDemo.slnx           # 1. Daml → DAR → C# bindings → the .NET solution   [make build]
+dotnet run --project src/MiniDemo    # 2. run the integration test (needs a running LocalNet; env vars optional) [make run]
 ```
 
-Pass `--require-pqs` to step 3 (`dotnet run --project src/MiniDemo -- --require-pqs`, or
+Pass `--require-pqs` to step 2 (`dotnet run --project src/MiniDemo -- --require-pqs`, or
 `REQUIRE_PQS=1 make run`) to make section 6 gate on PQS reaching full projection — see
 [Troubleshooting](troubleshooting.md) for what that changes about the exit code. The demo exits `69`
 when the requirement is not met, but `make` reports `Error 69` and exits `2` itself, so check for `69` with `dotnet run` directly.
 
-**Windows:** run step 1 as `pwsh scripts/codegen.ps1` — a faithful PowerShell twin of `codegen.sh`
-(Windows PowerShell 5.1 or PowerShell 7+); steps 2 and 3 are byte-for-byte identical. The `make`
-targets assume a Unix shell, so on Windows call the three commands directly.
+**Windows:** CI tests Linux only, so Windows is not covered. The `make` targets assume a Unix shell, so on
+Windows call the `dotnet` commands directly.
 
-On a fresh clone the generated **bindings** are already committed, so `dotnet build` compiles without
-codegen. The compiled **DAR is not committed** (`.daml/` is gitignored), so `dotnet run` needs step 1
-first (or at least `dpm build`, or `MINI_DEMO_DAR` pointing at an existing `.dar`). Re-run step 1
+Nothing generated is committed: `dotnet build` compiles the DAR and the bindings, and copies the DAR next
+to the demo assembly, so `dotnet run` finds it (or set `MINI_DEMO_DAR` to an existing `.dar`). Re-run step 1
 whenever you change `Asset.daml`.
+
+### Two ways to generate the bindings
+
+```bash
+dotnet build MiniDemo.slnx                              # Standalone (default): bundled decoder, no JDK   [make build]
+dotnet build MiniDemo.slnx -p:DamlCodegenMode=Dpm       # dpm codegen-cs: needs dpm >= 1.0.20 and a JDK   [make build-dpm]
+```
+
+Both generate the same bindings. Choose `Dpm` when `Standalone` cannot read your DAR, for example one built
+for Daml-LF 1.x. [How it works](how-it-works.md#stage-1--codegen-daml--c) has the detail.
 
 <details>
 <summary><b>Expected output</b> (party IDs, contract IDs and ledger offsets differ per run and are shortened with <code>…</code> here; the amounts do not)</summary>
@@ -97,7 +109,7 @@ Targeting Canton LocalNet (AValidator1). Values default to a local LocalNet; ove
   CANTON_LOCALNET_TOKEN_URL      http://localhost:8082/realms/AValidator1/protocol/openid-connect/token
   CANTON_LOCALNET_CLIENT_ID      a-validator-1-validator
 == 1. Bootstrap ==
-Uploading DAR: …/daml/.daml/dist/canton-mini-demo-h03254a5ede8d-0.1.0.dar
+Uploading DAR: …/src/MiniDemo/bin/Debug/net10.0/daml.dar
 DAR upload outcome: Uploaded
 issuer = issuer-89189719140d::1220…
 alice  = alice-89189719140d::1220…
@@ -177,3 +189,16 @@ Reproducing this output needs LocalNet [`v0.9.1-1`](https://github.com/peacefuls
 or later — earlier releases grant PQS read access to the validator party only, so PQS times out against
 this demo's fresh parties instead of projecting anything.
 </details>
+
+## See the whole run as one trace
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` and the demo exports its traces over OTLP (gRPC), with every SDK span of the run (gRPC, JSON API and PQS) under one `mini-demo run` parent. With the variable unset, nothing is exported and the output and exit codes are unchanged.
+
+```bash
+make up PQS=true OBS=true            # in canton-localnet: LocalNet with PQS and the observability stack
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:14001 dotnet run --project src/MiniDemo
+```
+
+The OTLP gRPC port 14001 is published to the host by canton-localnet `v0.9.3-1` or later; on earlier releases, point the endpoint at an OTLP collector you run yourself.
+
+Then open Grafana at <http://localhost:3030>, go to Explore, pick the Tempo data source and search for the service `mini-demo`.

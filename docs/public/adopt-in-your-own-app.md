@@ -18,9 +18,10 @@ This demo *is* the template. To do the same in your own project:
    dotnet add package Microsoft.Extensions.Configuration.Json   # or reference Microsoft.Extensions.Hosting, which brings both
    ```
 2. **Write your Daml** template(s) and a `daml.yaml`.
-3. **Generate bindings** with `dpm codegen-cs --dar <your.dar> --out <dir>`
-   (crib `codegen/daml.yaml` for the OCI component pin, and `scripts/codegen.sh` for the build →
-   codegen → commit flow).
+3. **Generate bindings** at build time: reference `Daml.Codegen.CSharp.MSBuild` and add a
+   `<DamlProject Include="path/to/daml" />` item for the folder holding your `daml.yaml` (crib
+   `src/MiniDemo.Contracts/MiniDemo.Contracts.csproj`). Set `DamlNamespace` for the C# namespace. Add
+   `-p:DamlCodegenMode=Dpm` to use `dpm codegen-cs` instead of the bundled decoder.
 4. **Register the client.** On gRPC, `AddCantonLedger(configuration)` (from `Canton.Ledger.Grpc.Client`)
    wires client and auth together from the root configuration (`Canton:Ledger` and `Canton:Auth`). On
    JSON/REST there is no root-configuration convention call like it: pass the two sections to
@@ -75,7 +76,7 @@ This demo *is* the template. To do the same in your own project:
 > real service supplies those from its own deployment (participant admin API, IAM) and keeps only the
 > `Daml.Runtime` + `Canton.Ledger.*` packages at runtime.
 
-Everything else here — the codegen script, the drift check, the central package versions, the
+Everything else here — the package-name check, the central package versions, the
 coverage wiring — is meant to be lifted into a real service.
 
 ## The wider SDK
@@ -84,5 +85,5 @@ This demo consumes packages from the rest of the Canton .NET SDK. If you want th
 
 | Package / component | Repository |
 |---------------------|-----------|
-| `Daml.Runtime`, `Daml.Ledger.Abstractions`, `Canton.Ledger.Grpc.Client`, `Canton.Ledger.Rest.Client`, `Canton.Ledger.Kernel`, `Canton.Ledger.Pqs.Client`, `dpm codegen-cs` | [`canton-dotnet-sdk`](https://github.com/peacefulstudio/canton-dotnet-sdk) |
+| `Daml.Runtime`, `Daml.Ledger.Abstractions`, `Canton.Ledger.Grpc.Client`, `Canton.Ledger.Rest.Client`, `Canton.Ledger.Kernel`, `Canton.Ledger.Pqs.Client`, `Daml.Codegen.CSharp.MSBuild` | [`canton-dotnet-sdk`](https://github.com/peacefulstudio/canton-dotnet-sdk) |
 | `Peaceful.Canton.Localnet.Testing`, LocalNet stack | [`canton-localnet`](https://github.com/peacefulstudio/canton-localnet) |

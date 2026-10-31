@@ -25,22 +25,15 @@ internal static class DarLocator
                 : new DarLookup(null, $"{DarPathEnv} points to '{resolved}', which does not exist.");
         }
 
-        for (var dir = new DirectoryInfo(baseDirectory); dir is not null; dir = dir.Parent)
-        {
-            var dist = System.IO.Path.Combine(dir.FullName, "daml", ".daml", "dist");
-            if (!Directory.Exists(dist))
-                continue;
-
-            var dar = Directory.EnumerateFiles(dist, "*.dar")
-                .OrderByDescending(File.GetLastWriteTimeUtc)
-                .FirstOrDefault();
-            if (dar is not null)
-                return new DarLookup(dar, null);
-        }
+        var beside = Directory.Exists(baseDirectory)
+            ? Directory.EnumerateFiles(baseDirectory, "*.dar").OrderBy(path => path, StringComparer.Ordinal).FirstOrDefault()
+            : null;
+        if (beside is not null)
+            return new DarLookup(beside, null);
 
         return new DarLookup(
             null,
-            "Could not locate a built .dar. Run ./scripts/codegen.sh (or `dpm build` in daml/) first, " +
+            "Could not locate a built .dar beside the demo assembly. Run `dotnet build` first, " +
             $"or set {DarPathEnv} to the .dar path.");
     }
 }
