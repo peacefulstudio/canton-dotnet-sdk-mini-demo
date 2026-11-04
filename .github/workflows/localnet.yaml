@@ -48,8 +48,8 @@ jobs:
       - name: Build the demo, DAR and bindings included
         run: dotnet build src/MiniDemo/MiniDemo.csproj
 
-      - name: Boot a fresh LocalNet with PQS on a-validator-1 (canton-localnet v0.9.4-1)
-        uses: peacefulstudio/canton-localnet@7f5abf8f479b4a3c68db64b7f626ab3bc505cc6f # v0.9.4-1
+      - name: Boot a fresh LocalNet with PQS on a-validator-1 (canton-localnet v0.10.0-1)
+        uses: peacefulstudio/canton-localnet@8a1345a2015c39148fff80ff003f9bcd17c997d8 # v0.10.0-1
         with:
           validators: a
           pqs: 'true'
@@ -123,4 +123,4 @@ jobs:
 
       - name: Tear down LocalNet, volumes included
         if: always()
-        uses: peacefulstudio/canton-localnet/teardown@7f5abf8f479b4a3c68db64b7f626ab3bc505cc6f # v0.9.4-1
+        uses: peacefulstudio/canton-localnet/teardown@8a1345a2015c39148fff80ff003f9bcd17c997d8 # v0.10.0-1
