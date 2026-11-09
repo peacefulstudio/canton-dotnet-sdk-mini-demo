@@ -13,9 +13,9 @@ permissions:
   contents: read
 
 env:
-  DPM_INSTALLER_VERSION: '3.6.0'
-  DPM_LAUNCHER_VERSION: '1.0.22'
-  DAML_SDK_VERSION: '3.6.0'
+  DPM_INSTALLER_VERSION: '3.7.1'
+  DPM_LAUNCHER_VERSION: '1.1.1-snapshot-20261102.208.0.v13b5087'
+  DAML_SDK_VERSION: '3.7.1'
 
 jobs:
   package-name:
