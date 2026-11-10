@@ -141,12 +141,26 @@ public class PqsLaneTests
         report.Should().Contain("Run `make up PQS=true` to enable it.");
     }
 
-    [Fact]
-    public async Task RunAsync_says_make_up_does_not_start_pqs_for_another_slot()
+    [Theory]
+    [InlineData("b-validator-1", "make up PQS_SLOTS=b")]
+    [InlineData("c-validator-1", "make up PQS_SLOTS=c")]
+    [InlineData("sv-validator-1", "make up PQS_SLOTS=sv")]
+    public async Task RunAsync_names_the_pqs_slots_command_for_a_slot_that_can_have_pqs(string slot, string expectedCommand)
     {
-        var report = await RunUnavailableAsync("Host=h;Port=5432;Database=pqs-c-validator-1;Username=u;Password=p");
+        var report = await RunUnavailableAsync($"Host=h;Port=5432;Database=pqs-{slot};Username=u;Password=p");
 
-        report.Should().Contain("`make up PQS=true` does not start PQS for c-validator-1");
+        report.Should().Contain($"`make up PQS=true` does not start PQS for {slot}");
+        report.Should().Contain($"`{expectedCommand}`");
+        report.Should().NotContain("to enable it");
+    }
+
+    [Fact]
+    public async Task RunAsync_says_d_validator_1_has_no_pqs_database()
+    {
+        var report = await RunUnavailableAsync("Host=h;Port=5432;Database=pqs-d-validator-1;Username=u;Password=p");
+
+        report.Should().Contain("d-validator-1 has no PQS database");
+        report.Should().NotContain("PQS_SLOTS");
         report.Should().NotContain("to enable it");
     }
 

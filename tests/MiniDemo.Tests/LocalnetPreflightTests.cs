@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using AwesomeAssertions;
+using Canton.Ledger.Abstractions;
 using Daml.Runtime.Outcomes;
 using Daml.Ledger.Abstractions;
 using Peaceful.Canton.Localnet.Testing;
@@ -165,7 +166,7 @@ public class LocalnetPreflightTests
     }
 
     [Fact]
-    public void IsLocalnetUnreachable_routes_a_rest_NoResponse_Unwrap_failure_to_the_help_text()
+    public void IsLocalnetUnreachable_routes_a_rest_NoResponse_OneOrThrow_failure_to_the_help_text()
     {
         var outcome = new ExerciseOutcome<int>.InfraError(
             new TransportStatus.NoResponse(), "Connection refused (localhost:8082)",
@@ -174,7 +175,7 @@ public class LocalnetPreflightTests
 
         try
         {
-            outcome.Unwrap("CreateAssetAsync");
+            outcome.OneOrThrow();
         }
         catch (Exception ex) when (LocalnetPreflight.IsLocalnetUnreachable(ex))
         {
@@ -207,7 +208,7 @@ public class LocalnetPreflightTests
     }
 
     [Fact]
-    public void IsLocalnetUnreachable_routes_a_grpc_Unavailable_Unwrap_failure_to_the_help_text()
+    public void IsLocalnetUnreachable_routes_a_grpc_Unavailable_OneOrThrow_failure_to_the_help_text()
     {
         var outcome = new ExerciseOutcome<int>.InfraError(
             GrpcStatus.Unavailable, "failed to connect to all addresses");
@@ -215,7 +216,7 @@ public class LocalnetPreflightTests
 
         try
         {
-            outcome.Unwrap("CreateAssetAsync");
+            outcome.OneOrThrow();
         }
         catch (Exception ex) when (LocalnetPreflight.IsLocalnetUnreachable(ex))
         {
@@ -229,11 +230,11 @@ public class LocalnetPreflightTests
     }
 
     [Fact]
-    public void IsLocalnetUnreachable_is_false_for_a_non_Unavailable_Unwrap_failure()
+    public void IsLocalnetUnreachable_is_false_for_a_non_Unavailable_OneOrThrow_failure()
     {
         var outcome = new ExerciseOutcome<int>.InfraError(GrpcStatus.Unauthenticated, "validator token expired");
 
-        var act = () => outcome.Unwrap("CreateAssetAsync");
+        var act = () => outcome.OneOrThrow();
 
         var thrown = act.Should().Throw<LedgerOperationException>().Which;
         thrown.Status.Should().Be(GrpcStatus.Unauthenticated);
@@ -253,6 +254,22 @@ public class LocalnetPreflightTests
     {
         LocalnetPreflight.IsLocalnetUnresponsive(new TimeoutException("HttpClient timeout"))
             .Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsLocalnetUnresponsive_is_true_for_a_grpc_DeadlineExceeded_failure()
+    {
+        var stalled = new LedgerOperationException("deadline exceeded", GrpcStatus.DeadlineExceeded, category: null);
+
+        LocalnetPreflight.IsLocalnetUnresponsive(stalled).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsLocalnetUnresponsive_is_false_for_a_grpc_Unavailable_failure()
+    {
+        var down = new LedgerOperationException("unavailable", GrpcStatus.Unavailable, category: null);
+
+        LocalnetPreflight.IsLocalnetUnresponsive(down).Should().BeFalse();
     }
 
     [Fact]

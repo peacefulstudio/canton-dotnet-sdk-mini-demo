@@ -8,7 +8,7 @@ Back to the [README](../../README.md).
 
 ```
 daml/
-  daml.yaml                       # sdk-version 3.6.0, Daml-LF 2.3, package canton-mini-demo-h03254a5ede8d 0.1.0
+  daml.yaml                       # sdk-version 3.7.1, Daml-LF 2.3, package canton-mini-demo-h3c507af1f40c 0.1.0
   daml/MiniDemo/Asset.daml        # Instrument, Asset (IHolding), AssetTransferFactory, AssetTransferInstruction
   dars/                           # Splice token-standard DARs: holding-v2, metadata-v1, transfer-instruction-v2
   test/                           # Daml Script tests: accept, reject, withdraw, late accept, partial transfer (plus the shared setup script, which `dpm test` also reports)
@@ -27,12 +27,11 @@ src/
     AssetAcsQuery.cs              #   typed, keyed active-contract-set query → AssetSnapshot list
     AssetKey.cs                   #   the (issuer, name) contract key, to and from its Daml tuple
     HoldingQuery.cs               #   IHolding interface-view query → HoldingSnapshot list, with each lock; typed Disclosure read
-    ExerciseOutcomeExtensions.cs  #   Unwrap: ExerciseOutcome<T> → the one result or a clear throw
     LocalnetSlot.cs               #   a LocalnetProfile as its canton-localnet slot name (c-validator-1, C_VALIDATOR_1)
     LocalnetPreflight.cs          #   startup endpoint banner + "unreachable" socket-error classifier
     LedgerEndpoint.cs             #   resolve the gRPC (env, default :11901) and JSON Ledger API addresses
     Tracing.cs                    #   opt-in OTLP trace export (OTEL_EXPORTER_OTLP_ENDPOINT) and the `mini-demo run` parent activity
-    DarLocator.cs                 #   locate the built .dar (MINI_DEMO_DAR or newest build output); a missing one exits 78
+    DarLocator.cs                 #   locate the built .dar (MINI_DEMO_DAR or the first .dar beside the assembly); a missing one exits 78
     DemoExitCode.cs               #   maps run failures to exit codes 0 / 1 / 65 / 69 / 75 / 78 / 130
     DemoVerificationException.cs  #   the demo's own failed assertion (exit 65)
     PqsLane.cs                    #   section 6: bounded wait for PQS to project, then asset and IHolding reports
@@ -69,25 +68,25 @@ bindings from the DAR; in `Dpm` mode it pins the `dpm-codegen-cs` OCI component 
 
 | Component | Version |
 |-----------|---------|
-| Daml SDK (`dpm install`) | `3.6.0` |
+| Daml SDK (`dpm install`) | `3.7.1` |
 | Daml-LF target (`--target`) | `2.3` |
-| `dpm` launcher | `>= 1.0.20` (pin the installer to `3.6.0`, which lands `1.0.22`) |
-| `Daml.Codegen.CSharp.MSBuild` | `0.7.1` (its `Dpm` mode pins the `dpm-codegen-cs` component `0.7.1` by digest) |
-| `Daml.Runtime` | `0.7.1` |
-| `Daml.Ledger.Abstractions` | `0.7.1` |
-| `Canton.Ledger.Grpc.Client` | `0.7.1` |
-| `Canton.Ledger.Rest.Client` | `0.7.1` |
-| `Canton.Ledger.Kernel` | `0.7.1` |
-| `Canton.Ledger.Pqs.Client` | `0.7.1` |
-| `Canton.Ledger.OpenTelemetry` | `0.7.1` |
-| `OpenTelemetry.Exporter.OpenTelemetryProtocol` | `1.20.0` |
+| `dpm` launcher | `>= 1.0.20` (pin the installer to `3.7.1`, which lands `1.1.1-snapshot-20261102.208.0.v13b5087`) |
+| `Daml.Codegen.CSharp.MSBuild` | `0.8.0` (its `Dpm` mode pins the `dpm-codegen-cs` component `0.8.0` by digest) |
+| `Daml.Runtime` | `0.8.0` |
+| `Daml.Ledger.Abstractions` | `0.8.0` |
+| `Canton.Ledger.Grpc.Client` | `0.8.0` |
+| `Canton.Ledger.Rest.Client` | `0.8.0` |
+| `Canton.Ledger.Kernel` | `0.8.0` |
+| `Canton.Ledger.Pqs.Client` | `0.8.0` |
+| `Canton.Ledger.OpenTelemetry` | `0.8.0` |
+| `OpenTelemetry.Exporter.OpenTelemetryProtocol` | `1.20.1` |
 | `Npgsql` | `10.0.3` |
-| `Splice.Api.Token.Holding.V2` | `1.0.0.20` |
-| `Splice.Api.Token.Transfer.Instruction.V2` | `1.0.0.20` |
-| `Canton.Ledger.Testing` | `0.7.1` (test projects only) |
-| `Peaceful.Canton.Localnet.Testing` | `0.9.4.1` |
-| `Microsoft.Extensions.DependencyInjection` | `10.0.13` |
-| `Microsoft.Extensions.Logging.Console` | `10.0.13` |
+| `Splice.Api.Token.Holding.V2` | `1.0.0.21` |
+| `Splice.Api.Token.Transfer.Instruction.V2` | `1.0.0.21` |
+| `Canton.Ledger.Testing` | `0.8.0` (test projects only) |
+| `Peaceful.Canton.Localnet.Testing` | `0.10.0.1` |
+| `Microsoft.Extensions.DependencyInjection` | `10.0.14` |
+| `Microsoft.Extensions.Logging.Console` | `10.0.14` |
 | .NET SDK | `10.0` |
 
 All versions are centrally managed (Central Package Management) in `Directory.Packages.props`, and

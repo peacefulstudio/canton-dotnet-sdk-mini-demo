@@ -8,7 +8,7 @@ Back to the [README](../../README.md).
 starts the OTLP trace export when `OTEL_EXPORTER_OTLP_ENDPOINT` is set, builds one service provider per transport, and hands off to `MiniDemoRunner`, which walks the
 issuance and the two-step transfer step by step; `AssetAcsQuery` owns the keyed ACS query,
 `HoldingQuery` the `IHolding` interface query (with each holding's lock) and the typed `Disclosure`
-read that feeds the acceptance, and `ExerciseOutcomeExtensions` the `Unwrap` helper. A transport is nothing more than
+read that feeds the acceptance. A transport is nothing more than
 `LedgerTransport(string Name, string Endpoint, ICantonLedgerClient Client, ResultStyle ResultStyle)` —
 the runner never learns which wire it holds. Three small modules keep the wiring honest: `LocalnetPreflight` builds that startup
 banner and classifies "LocalNet unreachable" socket errors into a friendly hint (so an unreachable
@@ -37,18 +37,17 @@ matters:
 ```csharp
 using Canton.Ledger.Abstractions;
 using Canton.Ledger.Grpc.Client;
-using Canton.Ledger.Kernel.Authentication;
 using Canton.Ledger.Pqs.Client;
 using Canton.Ledger.Rest.Client;
 using Microsoft.Extensions.DependencyInjection;
 
 await using var grpcServices = new ServiceCollection()
-    .AddCantonStaticAuth(accessToken)
+    .AddSingleton(tokenProvider)
     .AddLedgerClient(options => options.GrpcAddress = grpcAddress)
     .BuildServiceProvider();
 
 await using var restServices = new ServiceCollection()
-    .AddCantonStaticAuth(accessToken)
+    .AddSingleton(tokenProvider)
     .AddRestLedgerClient(options =>
     {
         options.HttpAddress = jsonApiAddress;
@@ -71,13 +70,13 @@ var pqsClient = pqsServices.GetRequiredService<IPqsClient>();
 
 `AddPqsClient` needs no bearer token — PQS is a direct Postgres connection, not an authenticated
 Ledger API call, so it is registered in its own container rather than alongside
-`AddCantonStaticAuth`.
+the token provider.
 
 Everything downstream of that array is shared. The whole difference between reaching Canton over gRPC
 and reaching it over HTTP is the registration call:
 
 ```diff
-     .AddCantonStaticAuth(accessToken)
+     .AddSingleton(tokenProvider)
 -    .AddLedgerClient(options => options.GrpcAddress = grpcAddress)
 +    .AddRestLedgerClient(options =>
 +    {
@@ -89,7 +88,7 @@ and reaching it over HTTP is the registration call:
 `HttpAddress` is the **JSON Ledger API** base URL — not `GrpcAddress`, and not the gRPC port.
 `UserId` is optional: left unset, the participant derives it from the token; the demo passes
 `fixture.ValidatorUserId`, the same ledger user it granted act-as rights to during bootstrap. Both
-transport packages ship on the same `0.7.1` line, pinned centrally (see
+transport packages ship on the same `0.8.0` line, pinned centrally (see
 [Pinned versions](project-layout-and-versions.md#pinned-versions)).
 
 Either call registers one adapter resolvable as the same five service types — `ICantonLedgerClient`,
@@ -101,7 +100,7 @@ abstraction, not a transport type, and the narrowest one that carries the interf
 methods that need only part of it still take `ILedgerWriter` or `ILedgerClient`, so the transport
 stays a detail of the composition root.
 
-The demo uses `AddCantonStaticAuth` because its token comes from the LocalNet fixture; a real service
+The demo registers its own `ITokenProvider` over the LocalNet fixture's OAuth2 provider, which refreshes the token before it expires, so a long run keeps authenticating; a real service
 uses `AddCantonAuth(configuration.GetSection("Canton:Auth"))` for OAuth2 client credentials. On gRPC, `AddCantonLedger(configuration)`
 (defined only in `Canton.Ledger.Grpc.Client`) wires client and auth together from the canonical
 `Canton:Ledger` and `Canton:Auth` configuration sections from the root configuration; REST has no
@@ -123,7 +122,7 @@ internal static async Task<ContractId<Instrument>> CreateInstrumentAsync(
         ResultStyle.OutcomePatternMatch => MatchCreated(await ledgerClient.TryCreateAsync(instrument, cancellationToken: ct)),
         ResultStyle.OrThrow => await ledgerClient
             .TryCreateAsync(instrument, cancellationToken: ct)
-            .OneOrThrowAsync(nameof(CreateInstrumentAsync)),
+            .OneOrThrowAsync(),
         _ => throw new ArgumentOutOfRangeException(nameof(style), style, "Unknown result style."),
     };
     return createdCid;
@@ -132,7 +131,7 @@ internal static async Task<ContractId<Instrument>> CreateInstrumentAsync(
 private static ContractId<Instrument> MatchCreated(ExerciseOutcome<ContractId<Instrument>> outcome) => outcome switch
 {
     ExerciseOutcome<ContractId<Instrument>>.One created => created.Result,
-    _ => outcome.Unwrap(nameof(CreateInstrumentAsync)),
+    _ => outcome.OneOrThrow(),
 };
 
 internal static async Task<ContractId<DemoAsset>> MintByKeyAsync(
@@ -150,7 +149,7 @@ internal static async Task<ContractId<DemoAsset>> MintByKeyAsync(
         new SubmitterInfo(issuer),
         workflowId: WorkflowId,
         cancellationToken: ct);
-    var transaction = outcome.Unwrap(nameof(MintByKeyAsync));
+    var transaction = outcome.OneOrThrow();
     var minted = transaction.Single<DemoAsset>();
     return minted;
 }
@@ -168,7 +167,7 @@ internal static async Task<ContractId<ITransferInstruction>> ProposeAsync(
         new SubmitterInfo(proposal.Parties.Alice),
         workflowId: WorkflowId,
         cancellationToken: ct);
-    var result = outcome.Unwrap(nameof(ProposeAsync));
+    var result = outcome.OneOrThrow();
     if (result.Output is not TransferInstructionResult_Output.TransferInstructionResult_Pending pending)
         throw new DemoVerificationException(
             $"TransferFactory_Transfer returned {result.Output.GetType().Name}; a two-step transfer must " +
@@ -193,7 +192,7 @@ internal static async Task<ContractId<DemoAsset>> AcceptWithDisclosureAsync(
             workflowId: WorkflowId,
             configure: submission => submission.WithDisclosedContracts(lockedHolding),
             cancellationToken: ct)
-        .OneOrThrowAsync(nameof(AcceptWithDisclosureAsync));
+        .OneOrThrowAsync();
     if (result.Output is not TransferInstructionResult_Output.TransferInstructionResult_Completed completed
         || completed.Value.ReceiverHoldingCids.Count != 1)
         throw new DemoVerificationException(
@@ -211,7 +210,7 @@ internal static async Task VerifyTotalSupplyAsync(
         new SubmitterInfo(issuer),
         workflowId: WorkflowId,
         cancellationToken: ct);
-    var transaction = outcome.Unwrap(nameof(VerifyTotalSupplyAsync));
+    var transaction = outcome.OneOrThrow();
     var totalSupply = transaction.ExerciseResult<decimal>(Instrument.ChoiceTotalSupply.Name);
     if (totalSupply != ExpectedTotalSupply)
         throw new DemoVerificationException(
@@ -221,7 +220,7 @@ internal static async Task VerifyTotalSupplyAsync(
 ```
 
 The issuance lane creates `GOLD` through `TryCreateAsync` over gRPC and pattern-matches the returned
-outcome; `SILVER` goes over REST through `TryCreateAsync(...).OneOrThrowAsync(...)` from
+outcome; `SILVER` goes over REST through `TryCreateAsync(...).OneOrThrowAsync()` from
 `Canton.Ledger.Abstractions`, which returns the value or throws a `LedgerOperationException`. The
 console line under each `create` names the style, so the two are visible side by side. Every
 `ContractId<T>` is one sealed type with value equality, so the cross-transport check compares the id a
@@ -275,8 +274,12 @@ internal static async Task ObserveCreatedAsync(
             switch (streamEvent)
             {
                 case ContractStreamEvent<DemoAsset>.StreamError error:
-                    throw new DemoVerificationException(
-                        $"Update-stream check failed: the {transportName} stream ended with a fault ({error.Message}).");
+                    throw new LedgerOperationException(
+                        $"The {transportName} update stream ended with a fault (status {error.Status}): {error.Message}",
+                        error.Status,
+                        error.Category,
+                        error.SourceException,
+                        error.ErrorId);
                 case ContractStreamEvent<DemoAsset>.Created created when created.ContractId == expected:
                     EnsureInsideWindow(created.Offset, after, through, transportName);
                     return;
@@ -311,7 +314,7 @@ The mint and the total supply go **by key**: `Instrument.MintByKeyCommand((issue
 Every `Try…Async` helper returns an **`ExerciseOutcome<T>`** — a structured result that
 distinguishes success (`One`), a Daml validation error (`DamlError` with error-id / category /
 message), an infrastructure/transport error (`InfraError`), and the empty / multiple cardinality
-cases. The demo's `Unwrap` helper collapses that to "give me the one result or throw a clear
+cases. The SDK's `OneOrThrow` collapses that to "give me the one result or throw a clear
 exception".
 
 Infrastructure faults carry a `TransportStatus` you can match on, so "the network is down" is
@@ -409,7 +412,6 @@ runs out — and `DemoExitCode.ForRunAsync` maps that exception to exit `69`. Se
 
 The LocalNet-free logic is covered by **xUnit v3 unit tests** in `tests/MiniDemo.Tests/`:
 
-- `UnwrapTests` pins every `ExerciseOutcome<T>` branch of `Unwrap`.
 - `FailureLaneTests` pins the duplicate-command section: the rejection is observed in both result styles, an accepted or differently rejected resubmission exits `65`, and infrastructure faults keep their usual exit codes. `CreateInstrumentStyleTests` pins the two ways to read a create.
 - `AssetAcsQueryTests` drives `AssetAcsQuery` through a fake ledger client: created events map to snapshots with their decoded key and accumulate in order, a terminal checkpoint ends the snapshot, and stream-error, unclassified, marker-less, keyless and undecodable-key streams throw.
 - `TwoStepTransferTests` drives the issuance and the transfer through a recording ledger writer:

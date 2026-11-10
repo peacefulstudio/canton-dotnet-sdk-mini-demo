@@ -62,9 +62,9 @@ internal static class FailureLane
     {
         var outcome = writer.TrySubmitAndWaitForTransactionAsync(submission, submitter, cancellationToken: ct);
         if (style == ResultStyle.OrThrow)
-            await outcome.OneOrThrowAsync(nameof(SubmitFirstAsync));
+            await outcome.OneOrThrowAsync();
         else
-            (await outcome).Unwrap(nameof(SubmitFirstAsync));
+            (await outcome).OneOrThrow();
     }
 
     private static async Task<Rejection> SubmitSecondAsync(
@@ -80,7 +80,7 @@ internal static class FailureLane
     {
         try
         {
-            await outcome.OneOrThrowAsync(nameof(SubmitSecondAsync));
+            await outcome.OneOrThrowAsync();
         }
         catch (LedgerOperationException ex) when (ex.ErrorId is { } errorId && ex.Category is { } category)
         {
@@ -101,7 +101,7 @@ internal static class FailureLane
             case ExerciseOutcome<TransactionResult>.DamlError other:
                 throw UnexpectedRejection(other.ErrorId, other.Category);
             default:
-                outcome.Unwrap(nameof(SubmitSecondAsync));
+                outcome.OneOrThrow();
                 throw AcceptedDuplicate();
         }
     }

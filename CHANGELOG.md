@@ -9,6 +9,24 @@ after a release takes a fourth identifier, for example `0.6.0-preview.3.1`.
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-11-10
+
+### Changed
+
+- **Canton .NET SDK `0.8.0`, Splice `0.10.0` bindings and Daml SDK `3.7.1`** — every `Daml.*` and `Canton.Ledger.*` package, the `Daml.Codegen.CSharp.MSBuild` package (whose `Dpm` mode pins the `dpm-codegen-cs` component `0.8.0` by digest) and the Splice `holding-v2` and `transfer-instruction-v2` C# bindings (`1.0.0.21`, generated from Splice 0.10.0) move together. The Daml build moves from SDK `3.6.0` to `3.7.1` (still `--target=2.3`), so the package name and id change. The `3.7.1` installer lands the `dpm` launcher `1.1.1-snapshot-20261102.208.0.v13b5087`, which CI now pins; the floor stays `dpm` `>= 1.0.20`. `OneOrThrow`, `OneOrThrowAsync` and the excerpts that show them no longer pass an operation name. A successful run prints the same output; a failure message now names the template and choice that produced it, for example `Instrument.Create`, instead of the method name.
+- **LocalNet `v0.10.0-1`** — the LocalNet testing package (`0.10.0.1`) and the CI LocalNet pin move to `v0.10.0-1`, which carries Splice 0.10.0 (Canton 3.7.1, protocol version 37). The README now states that the demo is tested against this LocalNet or later. A LocalNet stack created before `v0.10.0-1` needs `canton-localnet down --volumes` before it moves to protocol version 37.
+- **Pinned-versions table matches the props files** — the table in the project-layout guide listed `OpenTelemetry.Exporter.OpenTelemetryProtocol` `1.20.0` and `Microsoft.Extensions.*` `10.0.13` after the props had moved to `1.20.1` and `10.0.14`. The three rows now read the pinned values.
+- **One license header form** — the `Makefile`, the two Daml sources and the repository scripts now carry the two-line header the C# files use, `Copyright 2026 Peaceful Studio OÜ` and `SPDX-License-Identifier: Apache-2.0`, instead of a line ending in "All rights reserved" next to the Apache-2.0 identifier. The Daml package name in `daml/daml.yaml` is refreshed with them.
+
+### Fixed
+
+- **A stalled gRPC call exits 75** — a gRPC call that exceeds its deadline now exits 75 ("LocalNet is not responding") like the same stall over REST, instead of exit 1.
+- **Package name ignores stray files** — `make package-name` now hashes only the `.daml` sources, so a macOS `.DS_Store` or an editor swap file under `daml/daml/` no longer changes the name that CI checks.
+- **Long runs keep their token** — both ledger clients now ask a refreshing token provider for a token on every call instead of holding one fixed token, so a run that outlasts the token lifetime no longer fails with an authentication error.
+- **Public docs match the code** — the guides now say the demo picks the first `.dar` beside the assembly, that `make up PQS_SLOTS=b,c,sv` starts PQS for the other slots, and that `dotnet build` writes gitignored output such as `daml/.daml/`. The PQS hint the demo prints for `b-validator-1`, `c-validator-1` and `sv-validator-1` names `make up PQS_SLOTS=<slot>`, and for `d-validator-1` it says the slot has no PQS database.
+- **Update-stream faults exit 1** — a transport fault on the update stream, such as an HTTP 503 or a gRPC `Unavailable`, now exits 1 like the same fault on the ACS read, instead of exit 65 ("the ledger did not match").
+- **Daml rejections exit 1 everywhere** — a Daml rejection read through the demo's own outcome helper aborted the process unhandled instead of exiting 1 like the same rejection over REST. Every call site now uses the SDK's `OneOrThrow`, so both result styles exit 1.
+
 ## [0.7.1] — 2026-10-29
 
 ### Added
@@ -251,7 +269,8 @@ Needs a Canton **LocalNet 0.6.11** up (JSON `:11975` / gRPC `:11901`) and the `d
 
 📖 Start at the [README](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/README.md) — it walks the whole Daml → codegen → run loop.
 
-[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.0-preview.1...v0.7.0
 [0.7.0-preview.1]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.6.0...v0.7.0-preview.1

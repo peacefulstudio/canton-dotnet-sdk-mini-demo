@@ -26,6 +26,8 @@ internal static class PqsLane
         string connectionString, IReadOnlyCollection<string> contractIds, CancellationToken cancellationToken);
 
     private const string DatabasePrefix = "pqs-";
+    private const string SlotSuffix = "-validator-1";
+    private const string SlotWithoutPqsDatabase = "d-validator-1";
 
     internal static async Task RunAsync(
         int section,
@@ -290,10 +292,17 @@ internal static class PqsLane
     private static string HowToEnable(string connectionString)
     {
         var database = PqsConnectionString.ContainerName(connectionString);
-        return database == PqsConnectionString.ContainerName(PqsConnectionString.DefaultConnectionString)
-            ? "Run `make up PQS=true` to enable it."
-            : $"`make up PQS=true` does not start PQS for {SlotOf(database)}; only a-validator-1 gets a read model from it.";
+        if (database == PqsConnectionString.ContainerName(PqsConnectionString.DefaultConnectionString))
+            return "Run `make up PQS=true` to enable it.";
+
+        var slot = SlotOf(database);
+        return slot == SlotWithoutPqsDatabase
+            ? $"{slot} has no PQS database."
+            : $"`make up PQS=true` does not start PQS for {slot}; run `make up PQS_SLOTS={ShortSlotOf(slot)}` to start it.";
     }
+
+    private static string ShortSlotOf(string slot) =>
+        slot.EndsWith(SlotSuffix, StringComparison.Ordinal) ? slot[..^SlotSuffix.Length] : slot;
 
     private static void WriteTimeoutHint(
         ContractId<DemoAsset> contractId, TimeSpan timeout, string connectionString, string ledgerProgress, TextWriter output) =>

@@ -15,15 +15,15 @@ Back to the [README](../../README.md).
 | **Canton LocalNet** | running | the ledger the demo talks to — this repo does **not** start one |
 | **PQS** (optional) | `make up PQS=true` in `canton-localnet` | starts the scribe projector + Postgres read model for section 6 (ready once `docker logs pqs-a-validator-1 2>&1 \| grep "Contract filter"` prints a line); without it, section 6 detects the missing database instantly and moves on |
 
-Install `dpm` and the pinned Daml SDK. Pin the installer to a specific release (`3.6.0` lands dpm
-launcher `1.0.22`) rather than riding `latest` — a moving target, and dpm `< 1.0.20` can reuse a
+Install `dpm` and the pinned Daml SDK. Pin the installer to a specific release (`3.7.1` lands dpm
+launcher `1.1.1-snapshot-20261102.208.0.v13b5087`) rather than riding `latest` — a moving target, and dpm `< 1.0.20` can reuse a
 stale same-name codegen component from cache without verifying its digest:
 
 ```bash
-curl -sSL https://get.digitalasset.com/install/install.sh | sh -s -- 3.6.0
+curl -sSL https://get.digitalasset.com/install/install.sh | sh -s -- 3.7.1
 export PATH="$HOME/.dpm/bin:$PATH"
-dpm --version               # expect 1.0.22
-dpm install 3.6.0           # the SDK this demo builds against
+dpm --version               # expect 1.1.1-snapshot-20261102.208.0.v13b5087
+dpm install 3.7.1           # the SDK this demo builds against
 ```
 
 Bring up a LocalNet from [`peacefulstudio/canton-localnet`](https://github.com/peacefulstudio/canton-localnet)
@@ -62,7 +62,7 @@ validator (one Daml module, one program). For a non-default slot the gRPC addres
 Every slot's validator ledger user id has a default in the `canton-localnet` testing
 package, so `CANTON_LOCALNET_VALIDATOR_USER_ID` is only for a rotated id. An unknown `CANTON_LOCALNET_PROFILE` makes the demo stop before it touches the ledger and exit `78` (so does a missing built `.dar`, or a `MINI_DEMO_DAR` that points nowhere), as does `sv-validator-1` until you set its token URL, client id and client secret (it has no defaults for them).
 
-PQS follows the slot too: the demo reads the Postgres database `pqs-<slot>` (for example `pqs-c-validator-1`) on the same host, port and credentials as the default, or the connection string in `CANTON_LOCALNET_<SLOT>_PQS_CONNECTION_STRING`. `make up PQS=true` starts PQS for `a-validator-1` only, yet Postgres creates the `pqs-a-validator-1`, `pqs-b-validator-1`, `pqs-c-validator-1` and `pqs-sv-validator-1` databases. On b, c and sv that database exists but stays empty (no tables, no `active` function), so the read fails with SQLSTATE `42883` or `42P01`; `d-validator-1` has no PQS database at all (SQLSTATE `3D000`). The demo treats all of these alike: section 6 reports PQS as not available and moves on (or exits `69` under `--require-pqs`).
+PQS follows the slot too: the demo reads the Postgres database `pqs-<slot>` (for example `pqs-c-validator-1`) on the same host, port and credentials as the default, or the connection string in `CANTON_LOCALNET_<SLOT>_PQS_CONNECTION_STRING`. `make up PQS=true` starts PQS for `a-validator-1` only (`make up PQS_SLOTS=b,c,sv` starts the others that have one), yet Postgres creates the `pqs-a-validator-1`, `pqs-b-validator-1`, `pqs-c-validator-1` and `pqs-sv-validator-1` databases. On b, c and sv that database exists but stays empty (no tables, no `active` function), so the read fails with SQLSTATE `42883` or `42P01`; `d-validator-1` has no PQS database at all (SQLSTATE `3D000`). The demo treats all of these alike: section 6 reports PQS as not available and moves on (or exits `69` under `--require-pqs`).
 
 > **No private feed, token, or credential is needed to build.** Every SDK package restores from
 > **public nuget.org** — `NuGet.config` lists `nuget.org` only. `dotnet restore` / `dotnet build`
@@ -185,9 +185,8 @@ flag, an unavailable or a timed-out-with-nothing outcome exits `69` right away �
 polling until it either reaches `N of N` on both queries or exhausts the same 120s budget, and in the
 latter case also exits `69` instead of `0`.
 
-Reproducing this output needs LocalNet [`v0.9.1-1`](https://github.com/peacefulstudio/canton-localnet)
-or later — earlier releases grant PQS read access to the validator party only, so PQS times out against
-this demo's fresh parties instead of projecting anything.
+Reproducing this output needs LocalNet [`v0.10.0-1`](https://github.com/peacefulstudio/canton-localnet)
+or later, the first LocalNet on Canton 3.7. SDK 0.8.0 supports Canton 3.7 only, and the `v0.9.x` releases run Canton 3.6.
 </details>
 
 ## See the whole run as one trace

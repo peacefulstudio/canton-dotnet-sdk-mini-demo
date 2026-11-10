@@ -193,7 +193,7 @@ internal sealed class MiniDemoRunner
             ResultStyle.OutcomePatternMatch => MatchCreated(await ledgerClient.TryCreateAsync(instrument, cancellationToken: ct)),
             ResultStyle.OrThrow => await ledgerClient
                 .TryCreateAsync(instrument, cancellationToken: ct)
-                .OneOrThrowAsync(nameof(CreateInstrumentAsync)),
+                .OneOrThrowAsync(),
             _ => throw new ArgumentOutOfRangeException(nameof(style), style, "Unknown result style."),
         };
         Console.WriteLine($"  create   Instrument(issuer, {instrument.Name}) over {transportName} -> {createdCid.Value}");
@@ -204,7 +204,7 @@ internal sealed class MiniDemoRunner
     private static ContractId<Instrument> MatchCreated(ExerciseOutcome<ContractId<Instrument>> outcome) => outcome switch
     {
         ExerciseOutcome<ContractId<Instrument>>.One created => created.Result,
-        _ => outcome.Unwrap(nameof(CreateInstrumentAsync)),
+        _ => outcome.OneOrThrow(),
     };
 
     internal static async Task<ContractId<ITransferFactory>> CreateTransferFactoryAsync(
@@ -212,7 +212,7 @@ internal sealed class MiniDemoRunner
     {
         var factory = new AssetTransferFactory(parties.Issuer, [parties.Alice, parties.Bob]);
         var factoryCid = (await ledgerClient.TryCreateAsync(factory, cancellationToken: ct))
-            .Unwrap(nameof(CreateTransferFactoryAsync));
+            .OneOrThrow();
         Console.WriteLine(
             $"  create   AssetTransferFactory(issuer, users = alice, bob) over {transportName} -> {factoryCid.Value}");
         return new ContractId<ITransferFactory>(factoryCid.Value);
@@ -233,7 +233,7 @@ internal sealed class MiniDemoRunner
             new SubmitterInfo(issuer),
             workflowId: WorkflowId,
             cancellationToken: ct);
-        var transaction = outcome.Unwrap(nameof(MintByKeyAsync));
+        var transaction = outcome.OneOrThrow();
         var minted = transaction.Single<DemoAsset>();
         Console.WriteLine(
             $"  mint     {AmountFormat.Display(amount)} {instrumentKey.Name} to {ownerLabel}, by key {instrumentKey} " +
@@ -272,7 +272,7 @@ internal sealed class MiniDemoRunner
             new SubmitterInfo(proposal.Parties.Alice),
             workflowId: WorkflowId,
             cancellationToken: ct);
-        var result = outcome.Unwrap(nameof(ProposeAsync));
+        var result = outcome.OneOrThrow();
         if (result.Output is not TransferInstructionResult_Output.TransferInstructionResult_Pending pending)
             throw new DemoVerificationException(
                 $"TransferFactory_Transfer returned {result.Output.GetType().Name}; a two-step transfer must " +
@@ -373,7 +373,7 @@ internal sealed class MiniDemoRunner
                 workflowId: WorkflowId,
                 configure: submission => submission.WithDisclosedContracts(lockedHolding),
                 cancellationToken: ct)
-            .OneOrThrowAsync(nameof(AcceptWithDisclosureAsync));
+            .OneOrThrowAsync();
         if (result.Output is not TransferInstructionResult_Output.TransferInstructionResult_Completed completed
             || completed.Value.ReceiverHoldingCids.Count != 1)
             throw new DemoVerificationException(
@@ -395,7 +395,7 @@ internal sealed class MiniDemoRunner
             new SubmitterInfo(issuer),
             workflowId: WorkflowId,
             cancellationToken: ct);
-        var transaction = outcome.Unwrap(nameof(VerifyTotalSupplyAsync));
+        var transaction = outcome.OneOrThrow();
         var totalSupply = transaction.ExerciseResult<decimal>(Instrument.ChoiceTotalSupply.Name);
         Console.WriteLine(
             $"  supply   TotalSupply by key {instrumentKey} over {transportName} = {AmountFormat.Display(totalSupply)} " +

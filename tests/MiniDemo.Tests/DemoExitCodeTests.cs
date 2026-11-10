@@ -51,6 +51,21 @@ public class DemoExitCodeTests
     }
 
     [Fact]
+    public async Task ForRunAsync_returns_Unresponsive_when_a_grpc_call_exceeds_its_deadline()
+    {
+        var error = new StringWriter();
+
+        var exitCode = await DemoExitCode.ForRunAsync(
+            _ => Task.FromException(
+                new Daml.Ledger.Abstractions.LedgerOperationException("deadline exceeded", GrpcStatus.DeadlineExceeded, category: null)),
+            error,
+            CancellationToken.None);
+
+        exitCode.Should().Be(DemoExitCode.Unresponsive);
+        error.ToString().Should().Contain("did not respond");
+    }
+
+    [Fact]
     public async Task ForRunAsync_returns_Unresponsive_and_writes_the_help_when_localnet_hangs()
     {
         var error = new StringWriter();

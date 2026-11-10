@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Copyright (c) 2026 Peaceful Studio OÜ. All rights reserved.
+# Copyright 2026 Peaceful Studio OÜ
 # SPDX-License-Identifier: Apache-2.0
 #
 # Prints the content-addressed name for the daml/daml.yaml package: a fixed
 # base name plus a 12-hex-char SHA-256 prefix (letter-prefixed so it satisfies
-# Daml's package-name grammar) over every file under daml/daml/, over
+# Daml's package-name grammar) over every .daml file under daml/daml/, over
 # daml.yaml's non-name fields, and over every *.dar under daml/dars/ (the
 # data-dependencies). `make package-name` writes it into daml/daml.yaml, and
 # CI fails when the committed name differs from this output.
@@ -17,7 +17,7 @@ BASE_NAME="canton-mini-demo"
 
 hash="$(
   {
-    find "${DAML_DIR}/daml" -type f | LC_ALL=C sort | while IFS= read -r f; do
+    find "${DAML_DIR}/daml" -type f -name '*.daml' | LC_ALL=C sort | while IFS= read -r f; do
       echo "FILE:${f#"${DAML_DIR}/"}"
       cat "${f}"
     done

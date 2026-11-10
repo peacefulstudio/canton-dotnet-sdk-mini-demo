@@ -26,7 +26,7 @@ This demo *is* the template. To do the same in your own project:
    wires client and auth together from the root configuration (`Canton:Ledger` and `Canton:Auth`). On
    JSON/REST there is no root-configuration convention call like it: pass the two sections to
    `services.AddRestLedgerClient(configuration.GetSection("Canton:Rest"), configuration.GetSection("Canton:Auth"))`, which also registers the token provider. The demo uses
-   `AddCantonStaticAuth` + `AddLedgerClient` / `AddRestLedgerClient` because its token comes from the
+   its own `ITokenProvider` + `AddLedgerClient` / `AddRestLedgerClient` because its token comes from the
    LocalNet fixture. Then inject `ICantonLedgerClient` when
    you query interface views, or the narrower `ILedgerClient` / `ILedgerWriter` / `ILedgerStreamer`
    otherwise. Every one of them is an abstraction both transports register, so the transport stays a
