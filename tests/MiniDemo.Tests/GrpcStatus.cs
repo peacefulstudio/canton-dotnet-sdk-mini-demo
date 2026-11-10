@@ -8,6 +8,7 @@ namespace MiniDemo.Tests;
 internal static class GrpcStatus
 {
     public static TransportStatus Unavailable { get; } = new TransportStatus.Grpc(GrpcStatusCode.Unavailable);
+    public static TransportStatus DeadlineExceeded { get; } = new TransportStatus.Grpc(GrpcStatusCode.DeadlineExceeded);
     public static TransportStatus Internal { get; } = new TransportStatus.Grpc(GrpcStatusCode.Internal);
     public static TransportStatus Unauthenticated { get; } = new TransportStatus.Grpc(GrpcStatusCode.Unauthenticated);
 }

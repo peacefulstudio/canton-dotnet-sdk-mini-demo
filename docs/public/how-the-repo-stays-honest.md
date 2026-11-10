@@ -8,7 +8,7 @@ Five GitHub Actions workflows run on GitHub-hosted runners, so what the README a
 by CI rather than taken on trust, and every release is cut from a green run:
 
 - **[`ci.yaml`](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/.github/workflows/ci.yaml)** — on every push to `main` and every pull
-  request, on `ubuntu-latest` only, with `dpm` `1.0.22` and Daml SDK `3.6.0` installed. Four jobs:
+  request, on `ubuntu-latest` only, with `dpm` `1.1.1-snapshot-20261102.208.0.v13b5087` and Daml SDK `3.7.1` installed. Four jobs:
   `package-name` fails when the content-addressed package name in `daml/daml.yaml` is stale;
   `build (Standalone)` builds and tests the solution (Release) with no JDK reachable;
   `build (Dpm)` builds it with JDK 17 and `-p:DamlCodegenMode=Dpm`; and
@@ -18,7 +18,7 @@ by CI rather than taken on trust, and every release is cut from a green run:
   restores, builds (Release) and runs the unit tests against nuget.org alone.
 - **[`localnet.yaml`](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/.github/workflows/localnet.yaml)** — runs the real demo end to end on
   `ubuntu-latest`, on demand (`workflow_dispatch`) and on every push to `main`. It boots LocalNet
-  v0.9.4-1 with PQS through the `peacefulstudio/canton-localnet` GitHub Action, builds
+  v0.10.0-1 with PQS through the `peacefulstudio/canton-localnet` GitHub Action, builds
   the demo with `dotnet build src/MiniDemo/MiniDemo.csproj`, runs
   `dotnet run --project src/MiniDemo -- --require-pqs`, and the action tears LocalNet down (`down --volumes`) before and after. Its runs are on the
   [LocalNet workflow page](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/localnet.yaml).

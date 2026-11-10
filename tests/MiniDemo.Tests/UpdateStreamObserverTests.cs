@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using AwesomeAssertions;
 using Canton.Ledger.Testing;
+using Daml.Ledger.Abstractions;
 using Daml.Runtime;
 using Daml.Runtime.Contracts;
 using Daml.Runtime.Data;
@@ -100,19 +101,45 @@ public class UpdateStreamObserverTests
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
-    [Fact]
-    public async Task ObserveCreatedAsync_throws_when_the_stream_carries_a_fault()
+    public static TheoryData<string, TransportStatus> TransportFaults => new()
+    {
+        { "REST", new TransportStatus.Http(System.Net.HttpStatusCode.ServiceUnavailable) },
+        { "gRPC", GrpcStatus.Unavailable },
+    };
+
+    [Theory]
+    [MemberData(nameof(TransportFaults))]
+    public async Task ObserveCreatedAsync_throws_a_ledger_operation_failure_when_the_stream_carries_a_transport_fault(
+        string transportName, TransportStatus status)
     {
         var client = FakeLedgerClient.Create()
-            .WithContractEvents(new ContractStreamEvent<DemoAsset>.StreamError(
-                new TransportStatus.Http(System.Net.HttpStatusCode.ServiceUnavailable), "boom", null, null, null))
+            .WithContractEvents(new ContractStreamEvent<DemoAsset>.StreamError(status, "boom", null, null, null))
             .Build();
 
         var act = () => UpdateStreamObserver.ObserveCreatedAsync(
-            client, "REST", Bob, Accepted, Start, End, GenerousTimeout, new StringWriter(), CancellationToken.None);
+            client, transportName, Bob, Accepted, Start, End, GenerousTimeout, new StringWriter(), CancellationToken.None);
 
-        (await act.Should().ThrowAsync<DemoVerificationException>())
-            .Which.Message.Should().Contain("REST").And.Contain("boom");
+        var thrown = (await act.Should().ThrowAsync<LedgerOperationException>()).Which;
+        thrown.Status.Should().Be(status);
+        thrown.Message.Should().Contain(transportName).And.Contain("boom");
+    }
+
+    [Fact]
+    public async Task a_grpc_unavailable_update_stream_fault_exits_the_demo_with_1()
+    {
+        var client = FakeLedgerClient.Create()
+            .WithContractEvents(new ContractStreamEvent<DemoAsset>.StreamError(GrpcStatus.Unavailable, "boom", null, null, null))
+            .Build();
+        var error = new StringWriter();
+
+        var exitCode = await DemoExitCode.ForRunAsync(
+            ct => UpdateStreamObserver.ObserveCreatedAsync(
+                client, "gRPC", Bob, Accepted, Start, End, GenerousTimeout, new StringWriter(), ct),
+            error,
+            CancellationToken.None);
+
+        exitCode.Should().Be(1);
+        error.ToString().Should().Contain("Canton LocalNet is not reachable");
     }
 
     [Fact]

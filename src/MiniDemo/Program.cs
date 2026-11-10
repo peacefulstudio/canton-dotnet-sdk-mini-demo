@@ -3,7 +3,6 @@
 
 using Canton.Ledger.Abstractions;
 using Canton.Ledger.Grpc.Client;
-using Canton.Ledger.Kernel.Authentication;
 using Canton.Ledger.Pqs.Client;
 using Canton.Ledger.Rest.Client;
 using Daml.Ledger.Abstractions;
@@ -44,15 +43,16 @@ return await DemoExitCode.ForRunAsync(RunDemoAsync, Console.Error, ct);
 async Task RunDemoAsync(CancellationToken cancellationToken)
 {
     using var run = Tracing.StartRun();
-    var accessToken = await fixture.TokenProvider.GetAccessTokenAsync(cancellationToken);
+    ITokenProvider tokenProvider = new LedgerTokenProvider(async token => await fixture.TokenProvider.GetAccessTokenAsync(token));
+    await tokenProvider.GetTokenAsync(cancellationToken);
 
     await using var grpcServices = new ServiceCollection()
-        .AddCantonStaticAuth(accessToken)
+        .AddSingleton(tokenProvider)
         .AddLedgerClient(options => options.GrpcAddress = grpcAddress)
         .BuildServiceProvider();
 
     await using var restServices = new ServiceCollection()
-        .AddCantonStaticAuth(accessToken)
+        .AddSingleton(tokenProvider)
         .AddRestLedgerClient(options =>
         {
             options.HttpAddress = jsonApiAddress;

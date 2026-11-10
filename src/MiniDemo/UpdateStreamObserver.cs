@@ -52,8 +52,12 @@ internal static class UpdateStreamObserver
                 switch (streamEvent)
                 {
                     case ContractStreamEvent<DemoAsset>.StreamError error:
-                        throw new DemoVerificationException(
-                            $"Update-stream check failed: the {transportName} stream ended with a fault ({error.Message}).");
+                        throw new LedgerOperationException(
+                            $"The {transportName} update stream ended with a fault (status {error.Status}): {error.Message}",
+                            error.Status,
+                            error.Category,
+                            error.SourceException,
+                            error.ErrorId);
                     case ContractStreamEvent<DemoAsset>.Created created when created.ContractId == expected:
                         EnsureInsideWindow(created.Offset, after, through, transportName);
                         output.WriteLine(

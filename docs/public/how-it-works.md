@@ -85,12 +85,12 @@ flowchart LR
     P --> D
 ```
 
-- **`dpm build`** (uses `daml/daml.yaml`, `sdk-version 3.6.0`, `--target=2.3`) emits the DAR. The package name carries a
-  content hash that `scripts/compute-package-name.sh` derives from `daml/daml/**`, `daml.yaml`'s
+- **`dpm build`** (uses `daml/daml.yaml`, `sdk-version 3.7.1`, `--target=2.3`) emits the DAR. The package name carries a
+  content hash that `scripts/compute-package-name.sh` derives from every `.daml` file under `daml/daml/`, `daml.yaml`'s
   non-name fields, and every `*.dar` under `daml/dars/**` (the data-dependencies). `make package-name` rewrites it
   into `daml/daml.yaml`, so editing the Daml source or a vendored DAR gives a package a fresh identity
   instead of colliding with a previously uploaded DAR of the same name and version. CI fails when the
-  committed name differs from the script's output, and `dotnet build` never writes into the repository.
+  committed name differs from the script's output, and `dotnet build` writes only gitignored output (`daml/.daml/`, `obj/` and `bin/`).
 - **The namespace** comes from `<DamlNamespace>MiniDemo.Asset</DamlNamespace>` in the project file. Dependency packages are not generated
   (`DamlIncludeDependencies` stays off): the Splice types come from the `Splice.Api.Token.Holding.V2` and
   `Splice.Api.Token.Transfer.Instruction.V2` NuGet packages.
@@ -225,8 +225,9 @@ over the half-open window `(windowStart, windowEnd]` — lower bound exclusive, 
 and requires the `Created` event for bob's accepted holding to arrive, at an offset inside that
 window. The stream is an `IAsyncEnumerable<ContractStreamEvent<Asset>>`; because `toOffset` is set it
 completes on its own, and a 30-second deadline cancels it should the participant stall. A stream that
-completes without the event, delivers an event outside the window, carries a `StreamError`, or misses
-the deadline throws, and the demo exits `65`.
+completes without the event, delivers an event outside the window, or misses the deadline throws, and
+the demo exits `65`. A `StreamError`, the transport failing mid-stream, exits `1` like the same fault on the ACS
+read.
 
 **Total supply by key.** Contract keys are **not unique** at Daml-LF 2.3: every `Asset` of the GOLD
 instrument carries the same key `(issuer, "GOLD")`, and the ledger accepts them all. The

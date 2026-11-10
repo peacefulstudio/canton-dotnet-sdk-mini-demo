@@ -46,8 +46,10 @@ public class CreateInstrumentStyleTests
             .Which.Status.Should().Be(GrpcStatus.Unavailable);
     }
 
-    [Fact]
-    public async Task CreateInstrumentAsync_pattern_match_style_throws_InvalidOperationException_for_a_daml_error()
+    [Theory]
+    [MemberData(nameof(BothStyles))]
+    public async Task CreateInstrumentAsync_surfaces_a_daml_error_as_a_ledger_operation_exception_in_either_style(
+        ResultStyle style)
     {
         var client = FakeLedgerClient.Create()
             .WithCreateResult(new ExerciseOutcome<ContractId<Instrument>>.DamlError(
@@ -57,14 +59,16 @@ public class CreateInstrumentStyleTests
                 new Dictionary<string, string>()))
             .Build();
 
-        var act = () => MiniDemoRunner.CreateInstrumentAsync(client, Gold, "gRPC", ResultStyle.OutcomePatternMatch, CancellationToken.None);
+        var act = () => MiniDemoRunner.CreateInstrumentAsync(client, Gold, "gRPC", style, CancellationToken.None);
 
-        (await act.Should().ThrowAsync<InvalidOperationException>())
-            .Which.Message.Should().Contain("DUPLICATE_CONTRACT_KEY");
+        var thrown = (await act.Should().ThrowAsync<LedgerOperationException>()).Which;
+        thrown.ErrorId.Should().Be("DUPLICATE_CONTRACT_KEY");
+        thrown.Category.Should().Be(DamlErrorCategory.InvalidGivenCurrentSystemStateResourceExists);
     }
 
-    [Fact]
-    public async Task CreateInstrumentAsync_or_throw_style_throws_LedgerOperationException_for_a_daml_error()
+    [Theory]
+    [MemberData(nameof(BothStyles))]
+    public async Task CreateInstrumentAsync_daml_error_exits_1_through_ForRunAsync_in_either_style(ResultStyle style)
     {
         var client = FakeLedgerClient.Create()
             .WithCreateResult(new ExerciseOutcome<ContractId<Instrument>>.DamlError(
@@ -74,23 +78,26 @@ public class CreateInstrumentStyleTests
                 new Dictionary<string, string>()))
             .Build();
 
-        var act = () => MiniDemoRunner.CreateInstrumentAsync(client, Gold, "gRPC", ResultStyle.OrThrow, CancellationToken.None);
+        var exitCode = await DemoExitCode.ForRunAsync(
+            ct => MiniDemoRunner.CreateInstrumentAsync(client, Gold, "gRPC", style, ct),
+            new StringWriter(),
+            CancellationToken.None);
 
-        (await act.Should().ThrowAsync<LedgerOperationException>())
-            .Which.ErrorId.Should().Be("DUPLICATE_CONTRACT_KEY");
+        exitCode.Should().Be(1);
     }
 
-    [Fact]
-    public async Task CreateInstrumentAsync_pattern_match_style_rejects_a_committed_but_undecodable_create()
+    [Theory]
+    [MemberData(nameof(BothStyles))]
+    public async Task CreateInstrumentAsync_rejects_a_committed_but_undecodable_create_in_either_style(ResultStyle style)
     {
         var client = FakeLedgerClient.Create()
             .WithCreateResult(new ExerciseOutcome<ContractId<Instrument>>.CommittedUndecodable(
                 "update-1", "no contract id in response", new FormatException("bad")))
             .Build();
 
-        var act = () => MiniDemoRunner.CreateInstrumentAsync(client, Gold, "gRPC", ResultStyle.OutcomePatternMatch, CancellationToken.None);
+        var act = () => MiniDemoRunner.CreateInstrumentAsync(client, Gold, "gRPC", style, CancellationToken.None);
 
-        (await act.Should().ThrowAsync<InvalidOperationException>())
-            .Which.Message.Should().Contain("do not resubmit");
+        (await act.Should().ThrowAsync<LedgerOperationException>())
+            .Which.Message.Should().Contain("committed but undecodable").And.Contain("no contract id in response");
     }
 }

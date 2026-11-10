@@ -61,7 +61,10 @@ internal static class LocalnetPreflight
         exception is LedgerOperationException { Status: TransportStatus.NoResponse, InnerException: HttpRequestException };
 
     public static bool IsLocalnetUnresponsive(Exception exception) =>
-        ExceptionChain.Flatten(exception).Any(current => current is TimeoutException);
+        ExceptionChain.Flatten(exception).Any(current => current is TimeoutException || IsGrpcDeadlineExceeded(current));
+
+    private static bool IsGrpcDeadlineExceeded(Exception exception) =>
+        exception is LedgerOperationException { Status: TransportStatus.Grpc { StatusCode: GrpcStatusCode.DeadlineExceeded } };
 
     public static void WriteConfigurationProblem(string problem, TextWriter writer) =>
         writer.WriteLine($"\nThe demo cannot start with this configuration.\n\n{problem}");
@@ -93,7 +96,7 @@ internal static class LocalnetPreflight
             ? "--require-pqs was set, but PQS is not available."
             : "--require-pqs was set, and PQS did not reach full projection within the bounded wait.";
         var nextStep = exception.PqsWasUnavailable
-            ? "start PQS for the selected slot (`make up PQS=true` in canton-localnet starts it for a-validator-1 only) and re-run."
+            ? "start PQS for the selected slot (`make up PQS=true` in canton-localnet starts it for a-validator-1; `make up PQS_SLOTS=b,c,sv` starts it for the other slots that have one) and re-run."
             : "this is the read model lagging, stopped, or not yet caught up.";
         writer.WriteLine($"\n{header}\n\n{exception.Message}\n\n{LedgerProgress(exception.Stage)}, so the ledger is fine — {nextStep}");
     }

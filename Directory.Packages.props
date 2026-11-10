@@ -3,19 +3,19 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Daml.Codegen.CSharp.MSBuild" Version="0.7.1" />
-    <PackageVersion Include="Daml.Runtime" Version="0.7.1" />
-    <PackageVersion Include="Daml.Ledger.Abstractions" Version="0.7.1" />
-    <PackageVersion Include="Splice.Api.Token.Holding.V2" Version="1.0.0.20" />
-    <PackageVersion Include="Splice.Api.Token.Transfer.Instruction.V2" Version="1.0.0.20" />
-    <PackageVersion Include="Canton.Ledger.Grpc.Client" Version="0.7.1" />
-    <PackageVersion Include="Canton.Ledger.Rest.Client" Version="0.7.1" />
-    <PackageVersion Include="Canton.Ledger.Kernel" Version="0.7.1" />
-    <PackageVersion Include="Canton.Ledger.Pqs.Client" Version="0.7.1" />
-    <PackageVersion Include="Canton.Ledger.OpenTelemetry" Version="0.7.1" />
+    <PackageVersion Include="Daml.Codegen.CSharp.MSBuild" Version="0.8.0" />
+    <PackageVersion Include="Daml.Runtime" Version="0.8.0" />
+    <PackageVersion Include="Daml.Ledger.Abstractions" Version="0.8.0" />
+    <PackageVersion Include="Splice.Api.Token.Holding.V2" Version="1.0.0.21" />
+    <PackageVersion Include="Splice.Api.Token.Transfer.Instruction.V2" Version="1.0.0.21" />
+    <PackageVersion Include="Canton.Ledger.Grpc.Client" Version="0.8.0" />
+    <PackageVersion Include="Canton.Ledger.Rest.Client" Version="0.8.0" />
+    <PackageVersion Include="Canton.Ledger.Kernel" Version="0.8.0" />
+    <PackageVersion Include="Canton.Ledger.Pqs.Client" Version="0.8.0" />
+    <PackageVersion Include="Canton.Ledger.OpenTelemetry" Version="0.8.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.1" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
-    <PackageVersion Include="Peaceful.Canton.Localnet.Testing" Version="0.9.4.1" />
+    <PackageVersion Include="Peaceful.Canton.Localnet.Testing" Version="0.10.0.1" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.14" />
   </ItemGroup>
