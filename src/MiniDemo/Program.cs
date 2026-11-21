@@ -38,7 +38,10 @@ using var loggerFactory = LoggerFactory.Create(builder =>
 
 await using var fixture = LocalnetFixture.FromEnvironment(loggerFactory);
 
-return await DemoExitCode.ForRunAsync(RunDemoAsync, Console.Error, ct);
+var progress = new DemoProgress();
+
+return await RunTimer.MeasureAsync(
+    () => DemoExitCode.ForRunAsync(RunDemoAsync, Console.Error, ct, progress), Console.Out, TimeProvider.System);
 
 async Task RunDemoAsync(CancellationToken cancellationToken)
 {
@@ -72,6 +75,6 @@ async Task RunDemoAsync(CancellationToken cancellationToken)
 
     var pqsClient = pqsServices.GetRequiredService<IPqsClient>();
 
-    var demo = new MiniDemoRunner(fixture, transports, pqsClient, pqsConnectionString, requirePqs);
+    var demo = new MiniDemoRunner(fixture, transports, pqsClient, pqsConnectionString, requirePqs, progress);
     await demo.RunAsync(cancellationToken);
 }

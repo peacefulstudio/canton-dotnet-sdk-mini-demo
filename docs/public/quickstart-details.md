@@ -8,12 +8,34 @@ Back to the [README](../../README.md).
 
 | Tool | Version | Why |
 |------|---------|-----|
-| **.NET SDK** | `>= 10.0.100` | builds and runs the app (`dotnet --version`) |
+| **.NET SDK** | major version **11** (`11.0.100` or a later `11.x`) | builds and runs the app (`dotnet --version`); `global.json` accepts no other major, older or newer |
 | **dpm** (Daml Package Manager) | `>= 1.0.20` | `dotnet build` runs `dpm build` to compile `daml/` into a DAR; `Dpm` mode also runs `dpm codegen-cs`, which needs the `oci://` component syntax and, from `1.0.20`, verifies component digests on a cache hit |
 | **JDK** (`Dpm` mode only) | `17+` | `dpm codegen-cs` runs a JVM helper to decode the DAR; the default `Standalone` mode needs no JDK |
 | **Docker + Compose** | Docker `>= 27`, Compose `>= 2.27` | runs the Canton LocalNet stack (`make up`); budget ~16 GB RAM for it |
 | **Canton LocalNet** | running | the ledger the demo talks to — this repo does **not** start one |
 | **PQS** (optional) | `make up PQS=true` in `canton-localnet` | starts the scribe projector + Postgres read model for section 6 (ready once `docker logs pqs-a-validator-1 2>&1 \| grep "Contract filter"` prints a line); without it, section 6 detects the missing database instantly and moves on |
+
+### Get the .NET 11 SDK
+
+`global.json` pins SDK `11.0.100` and rolls forward within 11.x only (`rollForward: latestMinor`). Any other
+major version, older or newer, fails with `A compatible .NET SDK was not found`. Run `dotnet --version` inside
+the clone to see which SDK it resolves.
+
+If your package manager installs a different major, install .NET 11 next to it with Microsoft's script:
+
+```bash
+curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 11.0
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$DOTNET_ROOT:$PATH"
+dotnet --version                     # 11.0.x
+```
+
+On macOS the Homebrew `dotnet-sdk` cask follows the newest major, so once a newer major ships it no longer
+installs .NET 11. Use the script above, or a versioned cask such as `dotnet-sdk@11` if Homebrew lists one
+(`brew search dotnet-sdk`). Keep `rollForward: latestMinor` as is: `latestMajor` lets the build pass on a newer
+SDK, but `dotnet run` can then exit `150` (the .NET 11 runtime is not found) unless `DOTNET_ROLL_FORWARD=Major` is set.
+
+### Get dpm and the Daml SDK
 
 Install `dpm` and the pinned Daml SDK. Pin the installer to a specific release (`3.7.1` lands dpm
 launcher `1.1.1-snapshot-20261102.208.0.v13b5087`) rather than riding `latest` — a moving target, and dpm `< 1.0.20` can reuse a
@@ -46,6 +68,7 @@ export CANTON_LOCALNET_SCOPE=...                # optional
 export CANTON_LOCALNET_LEDGER_GRPC=...          # gRPC Ledger API (default http://localhost:11901, the a-validator-1 port)
 export CANTON_LOCALNET_VALIDATOR_USER_ID=...    # set only when the validator's ledger user isn't the default
 export CANTON_LOCALNET_A_VALIDATOR_1_PQS_CONNECTION_STRING=...  # PQS Postgres connection string; the name follows the slot (C_VALIDATOR_1 for c-validator-1, …)
+export CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT=...               # only the Postgres host port (default 5432); ignored when the connection string above is set
 ```
 
 `make up` in `canton-localnet` is a plain `docker compose up -d` and prints none of these values. A
@@ -62,7 +85,7 @@ validator (one Daml module, one program). For a non-default slot the gRPC addres
 Every slot's validator ledger user id has a default in the `canton-localnet` testing
 package, so `CANTON_LOCALNET_VALIDATOR_USER_ID` is only for a rotated id. An unknown `CANTON_LOCALNET_PROFILE` makes the demo stop before it touches the ledger and exit `78` (so does a missing built `.dar`, or a `MINI_DEMO_DAR` that points nowhere), as does `sv-validator-1` until you set its token URL, client id and client secret (it has no defaults for them).
 
-PQS follows the slot too: the demo reads the Postgres database `pqs-<slot>` (for example `pqs-c-validator-1`) on the same host, port and credentials as the default, or the connection string in `CANTON_LOCALNET_<SLOT>_PQS_CONNECTION_STRING`. `make up PQS=true` starts PQS for `a-validator-1` only (`make up PQS_SLOTS=b,c,sv` starts the others that have one), yet Postgres creates the `pqs-a-validator-1`, `pqs-b-validator-1`, `pqs-c-validator-1` and `pqs-sv-validator-1` databases. On b, c and sv that database exists but stays empty (no tables, no `active` function), so the read fails with SQLSTATE `42883` or `42P01`; `d-validator-1` has no PQS database at all (SQLSTATE `3D000`). The demo treats all of these alike: section 6 reports PQS as not available and moves on (or exits `69` under `--require-pqs`).
+PQS follows the slot too: the demo reads the Postgres database `pqs-<slot>` (for example `pqs-c-validator-1`) on the same host, port and credentials as the default, or the connection string in `CANTON_LOCALNET_<SLOT>_PQS_CONNECTION_STRING`. If your LocalNet publishes Postgres on a host port other than `5432`, set only `CANTON_LOCALNET_<SLOT>_PQS_PORT` (for example `5433`) instead of writing the whole connection string; the connection string wins when both are set. `make up PQS=true` starts PQS for `a-validator-1` only (`make up PQS_SLOTS=b,c,sv` starts the others that have one), yet Postgres creates the `pqs-a-validator-1`, `pqs-b-validator-1`, `pqs-c-validator-1` and `pqs-sv-validator-1` databases. On b, c and sv that database exists but stays empty (no tables, no `active` function), so the read fails with SQLSTATE `42883` or `42P01`; `d-validator-1` has no PQS database at all (SQLSTATE `3D000`). The demo treats all of these alike: section 6 reports PQS as not available and moves on (or exits `69` under `--require-pqs`).
 
 > **No private feed, token, or credential is needed to build.** Every SDK package restores from
 > **public nuget.org** — `NuGet.config` lists `nuget.org` only. `dotnet restore` / `dotnet build`
@@ -109,7 +132,7 @@ Targeting Canton LocalNet (AValidator1). Values default to a local LocalNet; ove
   CANTON_LOCALNET_TOKEN_URL      http://localhost:8082/realms/AValidator1/protocol/openid-connect/token
   CANTON_LOCALNET_CLIENT_ID      a-validator-1-validator
 == 1. Bootstrap ==
-Uploading DAR: …/src/MiniDemo/bin/Debug/net10.0/daml.dar
+Uploading DAR: …/src/MiniDemo/bin/Debug/net11.0/daml.dar
 DAR upload outcome: Uploaded
 issuer = issuer-89189719140d::1220…
 alice  = alice-89189719140d::1220…
@@ -163,10 +186,13 @@ Granted act-as (issuer/alice/bob) to ledger user … (leased — revoked when th
              00… owner=bob-89189719140d::1220…, admin=issuer-89189719140d::1220…, instrument=GOLD, amount=10.0000000000
 
 Done — one set of generated bindings drove 2 transports (gRPC and REST) through a Token Standard V2 two-step transfer against one ledger.
+
+Done in 10s
 ```
 
 On startup the program prints the LocalNet endpoints it will target; if LocalNet isn't reachable it
 prints `Canton LocalNet is not reachable, or is not ready yet (…)` with a hint and exits `1` — it never silently no-ops.
+Every run that gets past the configuration check, successful or not, ends with a `Done in <N>s` line holding its run time.
 
 Only the identifiers and timestamps move between runs. Every run allocates fresh parties — note the
 per-run suffix on `issuer-…` / `alice-…` / `bob-…` — so the contract ids and those suffixes differ
@@ -185,8 +211,8 @@ flag, an unavailable or a timed-out-with-nothing outcome exits `69` right away �
 polling until it either reaches `N of N` on both queries or exhausts the same 120s budget, and in the
 latter case also exits `69` instead of `0`.
 
-Reproducing this output needs LocalNet [`v0.10.0-1`](https://github.com/peacefulstudio/canton-localnet)
-or later, the first LocalNet on Canton 3.7. SDK 0.8.0 supports Canton 3.7 only, and the `v0.9.x` releases run Canton 3.6.
+Reproducing this output needs LocalNet [`v0.10.2-1`](https://github.com/peacefulstudio/canton-localnet)
+or later (Splice 0.10.2, Canton 3.7.3). SDK 0.8.1 supports Canton 3.7 only, and the `v0.9.x` releases run Canton 3.6.
 </details>
 
 ## See the whole run as one trace

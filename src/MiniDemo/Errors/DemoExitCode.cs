@@ -16,7 +16,7 @@ internal static class DemoExitCode
     public const int Interrupted = 130;
 
     public static async Task<int> ForRunAsync(
-        Func<CancellationToken, Task> run, TextWriter error, CancellationToken ct)
+        Func<CancellationToken, Task> run, TextWriter error, CancellationToken ct, DemoProgress? progress = null)
     {
         try
         {
@@ -45,7 +45,7 @@ internal static class DemoExitCode
         }
         catch (LedgerOperationException ex)
         {
-            LocalnetPreflight.WriteLedgerOperationFailure(ex, error);
+            LedgerFailureReport.Write(ex, progress?.Current, error);
             return Failed;
         }
         catch (DemoVerificationException ex)

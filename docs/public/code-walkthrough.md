@@ -4,6 +4,8 @@ A tour of the C# in `src/MiniDemo/`: how the transport is chosen, how commands a
 
 Back to the [README](../../README.md).
 
+Read `Program.cs` and `MiniDemoRunner.cs` first; they sit at the root of `src/MiniDemo/`. Every other file lives in a folder by concern: `Config/` (endpoints, token, DAR, slot), `Preflight/` (checks before the first ledger call), `Ledger/` (transports, queries, the update stream, the failure lane), `Pqs/` (section 6), `Errors/` (exit codes, failure report, hints) and `Reporting/` (progress, timing, tracing, amount display). The unit tests mirror those folders.
+
 `Program.cs` is a thin entry point that reads the environment, prints the target-endpoint banner,
 starts the OTLP trace export when `OTEL_EXPORTER_OTLP_ENDPOINT` is set, builds one service provider per transport, and hands off to `MiniDemoRunner`, which walks the
 issuance and the two-step transfer step by step; `AssetAcsQuery` owns the keyed ACS query,
@@ -16,7 +18,7 @@ ledger exits `1` with guidance, never a silent no-op); `LedgerEndpoint` resolves
 gRPC one from `CANTON_LOCALNET_LEDGER_GRPC` (default `http://localhost:11901`), the JSON Ledger API
 one from the same `EndpointDiscovery` the bootstrap already uses, so the REST transport needs no new
 environment variable; and `DarLocator` finds the built `.dar` (`MINI_DEMO_DAR` if set, else the `.dar` that
-`dotnet build` copies next to the assembly). Each console section maps to an SDK concept:
+`dotnet build` copies next to the assembly). A ledger failure that is not a connection problem — a Daml rejection such as `DAML_FAILURE` or `CONTRACT_NOT_FOUND` — is printed by `LedgerFailureReport` from the structured fields of `LedgerOperationException` (`ErrorId`, `Category`, `CommandId`) and the step and transport the runner last recorded in `DemoProgress`, and `RunTimer` ends every run that gets past the configuration check with a `Done in <N>s` line. Each console section maps to an SDK concept:
 
 | Console section | What it exercises | Key SDK surface |
 |-----------------|-------------------|-----------------|
@@ -88,7 +90,7 @@ and reaching it over HTTP is the registration call:
 `HttpAddress` is the **JSON Ledger API** base URL — not `GrpcAddress`, and not the gRPC port.
 `UserId` is optional: left unset, the participant derives it from the token; the demo passes
 `fixture.ValidatorUserId`, the same ledger user it granted act-as rights to during bootstrap. Both
-transport packages ship on the same `0.8.0` line, pinned centrally (see
+transport packages ship on the same `0.8.1` line, pinned centrally (see
 [Pinned versions](project-layout-and-versions.md#pinned-versions)).
 
 Either call registers one adapter resolvable as the same five service types — `ICantonLedgerClient`,
@@ -410,7 +412,7 @@ runs out — and `DemoExitCode.ForRunAsync` maps that exception to exit `69`. Se
 
 ## Tests
 
-The LocalNet-free logic is covered by **xUnit v3 unit tests** in `tests/MiniDemo.Tests/`:
+The LocalNet-free logic is covered by **xUnit v3 unit tests** in `tests/MiniDemo.Tests/`, in the same folders as the code they cover (shared fakes such as `RecordingLedgerWriter` sit in `Support/`):
 
 - `FailureLaneTests` pins the duplicate-command section: the rejection is observed in both result styles, an accepted or differently rejected resubmission exits `65`, and infrastructure faults keep their usual exit codes. `CreateInstrumentStyleTests` pins the two ways to read a create.
 - `AssetAcsQueryTests` drives `AssetAcsQuery` through a fake ledger client: created events map to snapshots with their decoded key and accumulate in order, a terminal checkpoint ends the snapshot, and stream-error, unclassified, marker-less, keyless and undecodable-key streams throw.
@@ -423,6 +425,7 @@ The LocalNet-free logic is covered by **xUnit v3 unit tests** in `tests/MiniDemo
   - the pending-holding check rejects an unlocked holding or a lock with another holder, deadline or context, and its PQS read follows the same lenient/strict rules as section 6.
 - `MiniDemoRunnerTests` drives the cross-transport check through fake transports: every transport sees every asset, key and view; a missing contract or view, or a diverging key, payload or view, throws and exits `65` through `DemoExitCode`; a lone transport reads back its own asset. It also pins `RunPqsLaneAsync`'s safety net: a `null` client skips cleanly, a query failure after the probe is found is caught and reported unless `--require-pqs` is set (then it is wrapped into `PqsRequirementNotMetException`), and cancellation still propagates.
 - `DemoExitCodeTests` pins every `DemoExitCode.ForRunAsync` branch to its exit code, including a verification failure that names a connection issue and `PqsRequirementNotMetException` mapping to `69`.
+- `LedgerFailureReportTests`, `DamlFailureMessageTests` and `ErrorHintTests` pin how a ledger failure that is not a connection problem is printed: the code with its category, the short message pulled out of Canton's interpretation-error text (the full message when it does not match), the command id when the exception carries one, and a hint only for a known error code. `DemoProgressTests` pins the step tracker, and the report tests pin the header with and without a step. `RunTimerTests` pins the `Done in <N>s` line against an injected `TimeProvider`.
 - `LedgerEndpointTests` covers both endpoint resolutions: the gRPC-address env var and its default, and the JSON Ledger API URL from `EndpointDiscovery`.
 - `LocalnetConfigurationTests` covers the up-front configuration check: the default and every non-default slot pass without a validator user id override, and an unknown profile produces an actionable message (exit `78`).
 - `LocalnetPreflightTests` covers the startup banner and the socket-error "unreachable" classifier; `ExceptionChainTests` pins the shared exception-chain walk (linear chains, `AggregateException` branches, de-duplication of a shared reference).

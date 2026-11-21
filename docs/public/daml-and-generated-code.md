@@ -102,7 +102,7 @@ without knowing the `Asset` template.
 
 From that one Daml module, the package's emitter (Standalone by default, `dpm codegen-cs` with
 `-p:DamlCodegenMode=Dpm`) generates a small, idiomatic C# object model under
-`src/MiniDemo.Contracts/obj/<Configuration>/net10.0/DamlGenerated/MiniDemo/Asset/` (namespace `MiniDemo.Asset`, named after the Daml module):
+`src/MiniDemo.Contracts/obj/<Configuration>/net11.0/DamlGenerated/MiniDemo/Asset/` (namespace `MiniDemo.Asset`, named after the Daml module):
 
 - **`record Instrument(Party Issuer, string Name)`** and
   **`record Asset(Party Issuer, Party Owner, string Name, decimal Amount, Lock? Lock)`** — the templates

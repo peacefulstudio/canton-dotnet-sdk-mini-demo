@@ -106,12 +106,4 @@ internal static class LocalnetPreflight
             ? "The run stopped in section 3, right after alice's transfer proposal committed. Sections 1-2 passed and the\n" +
               "proposal is left pending (bob never accepted it)"
             : "Sections 1-5 already passed";
-
-    public static void WriteLedgerOperationFailure(LedgerOperationException exception, TextWriter writer) =>
-        writer.WriteLine(
-            $"\nThe ledger reported an operation failure that is not a known LocalNet reachability\n" +
-            $"issue: {exception.Message}\n\n" +
-            "This is not the demo's own content check failing \u2014 it is the ledger reporting a fault\n" +
-            "the demo cannot retry past. Check the LocalNet logs for the underlying cause, or file an\n" +
-            "issue if the status/category above looks like it should be classified as reachability instead.");
 }

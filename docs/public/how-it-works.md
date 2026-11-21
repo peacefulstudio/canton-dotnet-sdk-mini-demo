@@ -73,7 +73,7 @@ There are exactly two stages: a **build-time** codegen step that runs inside `do
 `dotnet build` does the whole job. `MiniDemo.Contracts` references the `Daml.Codegen.CSharp.MSBuild` package
 and one `<DamlProject Include="../../daml" />` item. On every build the package compiles the Daml package
 to a `.dar` with `dpm build`, decodes the archive, and emits the C# bindings under
-`src/MiniDemo.Contracts/obj/<Configuration>/net10.0/DamlGenerated/`, where they compile into the project.
+`src/MiniDemo.Contracts/obj/<Configuration>/net11.0/DamlGenerated/`, where they compile into the project.
 Nothing generated is committed, so a fresh clone builds with no codegen step.
 
 ```mermaid

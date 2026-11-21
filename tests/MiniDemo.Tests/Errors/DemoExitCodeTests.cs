@@ -92,9 +92,57 @@ public class DemoExitCodeTests
             CancellationToken.None);
 
         exitCode.Should().Be(DemoExitCode.Failed);
-        error.ToString().Should().Contain("The ledger reported an operation failure");
+        error.ToString().Should().Contain("\u2717 Ledger operation failed");
+        error.ToString().Should().Contain("status     Internal");
         error.ToString().Should().NotContain("Canton LocalNet is not reachable");
         error.ToString().Should().NotContain("did not respond");
+    }
+
+    [Fact]
+    public async Task ForRunAsync_returns_Failed_and_names_the_code_without_a_reachability_claim_for_a_daml_rejection()
+    {
+        var error = new StringWriter();
+
+        var exitCode = await DemoExitCode.ForRunAsync(
+            _ => Task.FromException(
+                new LedgerOperationException(
+                    "propose: Daml error [InvalidGivenCurrentSystemStateOther/DAML_FAILURE]: " +
+                    "DAML_FAILURE(9,21d28f9a): Interpretation error: User failure: Foo (error category 9): holdings too small",
+                    Daml.Runtime.Outcomes.DamlErrorCategory.InvalidGivenCurrentSystemStateOther,
+                    "DAML_FAILURE",
+                    new Dictionary<string, string>())),
+            error,
+            CancellationToken.None);
+
+        exitCode.Should().Be(DemoExitCode.Failed);
+        error.ToString().Should().Contain("code       DAML_FAILURE (InvalidGivenCurrentSystemStateOther)");
+        error.ToString().Should().Contain("message    holdings too small");
+        error.ToString().Should().NotContain("reachability");
+    }
+
+    [Fact]
+    public async Task ForRunAsync_names_the_step_the_run_had_entered_when_a_ledger_operation_fails()
+    {
+        var error = new StringWriter();
+        var progress = new DemoProgress();
+
+        var exitCode = await DemoExitCode.ForRunAsync(
+            _ =>
+            {
+                progress.Enter("accept", "REST");
+                return Task.FromException(
+                    new LedgerOperationException(
+                        "TransferInstruction.TransferInstruction_Accept: Daml error [InvalidGivenCurrentSystemStateOther/CONTRACT_NOT_FOUND]: gone",
+                        Daml.Runtime.Outcomes.DamlErrorCategory.InvalidGivenCurrentSystemStateOther,
+                        "CONTRACT_NOT_FOUND",
+                        new Dictionary<string, string>()));
+            },
+            error,
+            CancellationToken.None,
+            progress);
+
+        exitCode.Should().Be(DemoExitCode.Failed);
+        error.ToString().Should().Contain("\u2717 accept failed over REST: TransferInstruction.TransferInstruction_Accept");
     }
 
     [Fact]
