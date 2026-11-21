@@ -21,6 +21,12 @@ public class PqsConnectionStringTests
     }
 
     [Fact]
+    public void psql_conninfo_names_the_connection_without_the_password()
+    {
+        PqsConnectionString.ToPsqlConnInfo(Custom).Should().Be("host=db port=5433 dbname=custom user=u");
+    }
+
+    [Fact]
     public void configured_value_is_returned_when_present()
     {
         var env = new Dictionary<string, string?> { [PqsConnectionString.EnvFor(LocalnetProfile.AValidator1)] = Custom };
@@ -79,6 +85,90 @@ public class PqsConnectionStringTests
         var profile = EndpointDiscovery.ResolveProfile(env);
 
         PqsConnectionString.Resolve(profile, env).Should().Contain("Database=pqs-sv-validator-1");
+    }
+
+    [Fact]
+    public void port_env_var_follows_the_slot()
+    {
+        PqsConnectionString.PortEnvFor(LocalnetProfile.AValidator1).Should().Be("CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT");
+        PqsConnectionString.PortEnvFor(LocalnetProfile.CValidator1).Should().Be("CANTON_LOCALNET_C_VALIDATOR_1_PQS_PORT");
+    }
+
+    [Fact]
+    public void port_env_var_replaces_only_the_port_of_the_default_connection_string()
+    {
+        var env = new Dictionary<string, string?> { ["CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT"] = "5433" };
+
+        PqsConnectionString.Resolve(LocalnetProfile.AValidator1, env)
+            .Should().Be("Host=localhost;Port=5433;Database=pqs-a-validator-1;Username=cnadmin;Password=supersafe");
+    }
+
+    [Fact]
+    public void port_env_var_of_another_slot_is_ignored()
+    {
+        var env = new Dictionary<string, string?> { ["CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT"] = "5433" };
+
+        PqsConnectionString.Resolve(LocalnetProfile.CValidator1, env).Should().Contain("Port=5432");
+    }
+
+    [Fact]
+    public void full_connection_string_wins_over_the_port_env_var()
+    {
+        var env = new Dictionary<string, string?>
+        {
+            [PqsConnectionString.EnvFor(LocalnetProfile.AValidator1)] = Custom,
+            ["CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT"] = "6000",
+        };
+
+        PqsConnectionString.Resolve(LocalnetProfile.AValidator1, env).Should().Be(Custom);
+    }
+
+    [Fact]
+    public void blank_port_env_var_keeps_the_default_port()
+    {
+        var env = new Dictionary<string, string?> { ["CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT"] = "  " };
+
+        PqsConnectionString.Resolve(LocalnetProfile.AValidator1, env).Should().Contain("Port=5432");
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("0")]
+    [InlineData("65536")]
+    [InlineData("-1")]
+    [InlineData("5433:5432")]
+    public void FindPortProblem_rejects_a_port_that_is_not_a_tcp_port(string value)
+    {
+        var env = new Dictionary<string, string?> { ["CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT"] = value };
+
+        var problem = PqsConnectionString.FindPortProblem(LocalnetProfile.AValidator1, env);
+
+        problem.Should().Contain("CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT");
+        problem.Should().Contain($"\"{value}\"");
+    }
+
+    [Theory]
+    [InlineData("5433")]
+    [InlineData("1")]
+    [InlineData("65535")]
+    [InlineData("")]
+    public void FindPortProblem_accepts_a_tcp_port_or_nothing(string value)
+    {
+        var env = new Dictionary<string, string?> { ["CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT"] = value };
+
+        PqsConnectionString.FindPortProblem(LocalnetProfile.AValidator1, env).Should().BeNull();
+    }
+
+    [Fact]
+    public void FindPortProblem_ignores_an_invalid_port_when_the_full_connection_string_is_set()
+    {
+        var env = new Dictionary<string, string?>
+        {
+            [PqsConnectionString.EnvFor(LocalnetProfile.AValidator1)] = Custom,
+            ["CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT"] = "abc",
+        };
+
+        PqsConnectionString.FindPortProblem(LocalnetProfile.AValidator1, env).Should().BeNull();
     }
 
     [Fact]

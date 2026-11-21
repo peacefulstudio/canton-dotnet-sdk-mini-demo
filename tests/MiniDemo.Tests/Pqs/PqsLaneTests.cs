@@ -173,12 +173,48 @@ public class PqsLaneTests
         report.Should().Contain("PQS is not available (42883: function active(text) does not exist POSITION: 34); skipping.");
     }
 
-    private static async Task<string> RunUnavailableAsync(
-        string connectionString, string message = "function active(text) does not exist")
+    [Fact]
+    public async Task RunAsync_names_the_host_port_and_port_setting_when_postgres_refuses_the_connection()
+    {
+        var report = await RunUnavailableAsync(
+            "Host=localhost;Port=5433;Database=pqs-c-validator-1;Username=u;Password=secret",
+            new SocketException((int)SocketError.ConnectionRefused));
+
+        report.Should().Contain("Tried Postgres at localhost:5433.");
+        report.Should().Contain("CANTON_LOCALNET_C_VALIDATOR_1_PQS_PORT");
+        report.Should().Contain("CANTON_LOCALNET_C_VALIDATOR_1_PQS_CONNECTION_STRING");
+        report.Should().NotContain("secret");
+    }
+
+    [Fact]
+    public async Task RunAsync_uses_a_slot_placeholder_when_the_database_name_does_not_name_a_slot()
+    {
+        var report = await RunUnavailableAsync(
+            "Host=db;Port=6000;Database=custom;Username=u;Password=p",
+            new SocketException((int)SocketError.ConnectionRefused));
+
+        report.Should().Contain("Tried Postgres at db:6000.");
+        report.Should().Contain("CANTON_LOCALNET_<SLOT>_PQS_PORT");
+    }
+
+    [Fact]
+    public async Task RunAsync_does_not_blame_the_port_when_postgres_answered()
+    {
+        var report = await RunUnavailableAsync(PqsConnectionString.DefaultConnectionString);
+
+        report.Should().NotContain("Tried Postgres at");
+        report.Should().NotContain("PQS_PORT");
+    }
+
+    private static Task<string> RunUnavailableAsync(
+        string connectionString, string message = "function active(text) does not exist") =>
+        RunUnavailableAsync(connectionString, new PostgresException(message, "ERROR", "ERROR", "42883"));
+
+    private static async Task<string> RunUnavailableAsync(string connectionString, Exception failure)
     {
         var stub = new StubPqsClient
         {
-            FetchByIdBehavior = _ => throw new PostgresException(message, "ERROR", "ERROR", "42883"),
+            FetchByIdBehavior = _ => throw failure,
         };
         var writtenAssets = new[] { new WrittenAsset(Transport(), new ContractId<DemoAsset>("asset-2"), new AssetKey("issuer", "GOLD")) };
         var writer = new StringWriter();
@@ -232,6 +268,8 @@ public class PqsLaneTests
         report.Should().Contain("dbname=other-db");
         report.Should().NotContain("host=localhost");
         report.Should().NotContain("dbname=pqs-a-validator-1");
+        report.Should().NotContain("password=");
+        report.Should().NotContain("supersafe");
     }
 
     [Fact]

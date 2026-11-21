@@ -1,0 +1,6 @@
+// Copyright 2026 Peaceful Studio OÜ
+// SPDX-License-Identifier: Apache-2.0
+
+namespace MiniDemo;
+
+internal sealed record DemoStep(string Name, string? Transport);

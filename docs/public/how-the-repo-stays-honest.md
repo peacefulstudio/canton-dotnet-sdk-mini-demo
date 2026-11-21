@@ -18,7 +18,7 @@ by CI rather than taken on trust, and every release is cut from a green run:
   restores, builds (Release) and runs the unit tests against nuget.org alone.
 - **[`localnet.yaml`](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/.github/workflows/localnet.yaml)** — runs the real demo end to end on
   `ubuntu-latest`, on demand (`workflow_dispatch`) and on every push to `main`. It boots LocalNet
-  v0.10.0-1 with PQS through the `peacefulstudio/canton-localnet` GitHub Action, builds
+  v0.10.2-1 with PQS through the `peacefulstudio/canton-localnet` GitHub Action, builds
   the demo with `dotnet build src/MiniDemo/MiniDemo.csproj`, runs
   `dotnet run --project src/MiniDemo -- --require-pqs`, and the action tears LocalNet down (`down --volumes`) before and after. Its runs are on the
   [LocalNet workflow page](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/localnet.yaml).

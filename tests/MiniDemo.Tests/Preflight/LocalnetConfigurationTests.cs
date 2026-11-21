@@ -58,6 +58,34 @@ public class LocalnetConfigurationTests
     }
 
     [Fact]
+    public void FindProblem_rejects_a_pqs_port_that_is_not_a_tcp_port()
+    {
+        var env = new Dictionary<string, string?> { ["CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT"] = "5433:5432" };
+
+        LocalnetConfiguration.FindProblem(env).Should().Contain("CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT");
+    }
+
+    [Fact]
+    public void FindProblem_checks_the_pqs_port_of_the_selected_slot_only()
+    {
+        var env = new Dictionary<string, string?>
+        {
+            [EndpointDiscovery.ProfileEnv] = "c-validator-1",
+            ["CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT"] = "abc",
+        };
+
+        LocalnetConfiguration.FindProblem(env).Should().BeNull();
+    }
+
+    [Fact]
+    public void FindProblem_accepts_a_valid_pqs_port()
+    {
+        var env = new Dictionary<string, string?> { ["CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT"] = "5433" };
+
+        LocalnetConfiguration.FindProblem(env).Should().BeNull();
+    }
+
+    [Fact]
     public void WriteConfigurationProblem_prints_the_problem_to_the_writer()
     {
         var writer = new StringWriter();

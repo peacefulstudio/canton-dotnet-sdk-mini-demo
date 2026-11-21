@@ -5,12 +5,14 @@
 <p>
   <a href="https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/ci.yaml"><img alt="CI" src="https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/actions/workflows/ci.yaml/badge.svg"></a>
   <img alt="Tested on" src="https://img.shields.io/badge/tested%20on-Linux-2ea44f">
-  <img alt=".NET 10" src="https://img.shields.io/badge/.NET-10.0-512BD4">
-  <img alt="Canton SDK" src="https://img.shields.io/badge/Canton%20.NET%20SDK-0.8.0-0A7BBB">
+  <img alt=".NET 11" src="https://img.shields.io/badge/.NET-11.0-512BD4">
+  <img alt="Canton SDK" src="https://img.shields.io/badge/Canton%20.NET%20SDK-0.8.1-0A7BBB">
   <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue">
 </p>
 
 This repository is the **quickstart and end-to-end integration test** for the **C# / .NET SDK for Canton Network**. It is deliberately tiny: **one** Daml module and **one** console program. A new .NET developer can read it in one sitting and run it in minutes.
+
+Read `src/MiniDemo/Program.cs` (the entry point) and `src/MiniDemo/MiniDemoRunner.cs` (the code that calls the SDK) first. The helper files sit beside them in folders by concern: `Config/`, `Preflight/`, `Ledger/`, `Pqs/`, `Errors/` and `Reporting/`.
 
 If you want to build C# applications that talk to a Canton ledger and Daml contracts, this is the shortest path to a working example. Copy its pattern into your own app.
 
@@ -52,7 +54,7 @@ The SDK is a thin, codegen-aware client over the Ledger API, with no in-process 
 
 ## Quickstart
 
-You need the **.NET SDK `>= 10.0.100`**, **`dpm` `>= 1.0.20`** (it builds the Daml package into a DAR) and a running **Canton LocalNet** from [`canton-localnet`](https://github.com/peacefulstudio/canton-localnet) (`make up`, or `make up PQS=true` for section 6 and `--require-pqs`; this repo does not start one). The demo is tested against LocalNet `v0.10.0-1` (Splice 0.10.0, Canton 3.7.1) or later. Docker and about 16 GB of RAM are needed for LocalNet. No private feed or credential is needed to build.
+You need the **.NET SDK major version 11** (`11.0.100` or a later `11.x`; a newer major such as 12 is refused by `global.json`, so [install .NET 11](docs/public/quickstart-details.md#get-the-net-11-sdk) if your package manager ships another one), **`dpm` `>= 1.0.20`** (it builds the Daml package into a DAR) and a running **Canton LocalNet** from [`canton-localnet`](https://github.com/peacefulstudio/canton-localnet) (`make up`, or `make up PQS=true` for section 6 and `--require-pqs`; this repo does not start one). The demo is tested against LocalNet `v0.10.2-1` (Splice 0.10.2, Canton 3.7.3) or later. Docker and about 16 GB of RAM are needed for LocalNet. No private feed or credential is needed to build.
 
 ```bash
 curl -sSL https://get.digitalasset.com/install/install.sh | sh -s -- 3.7.1

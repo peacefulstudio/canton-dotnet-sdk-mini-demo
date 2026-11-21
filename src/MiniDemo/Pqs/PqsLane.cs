@@ -25,7 +25,6 @@ internal static class PqsLane
     internal delegate Task<IReadOnlyList<InterfaceContract<IHolding, HoldingView>>> HoldingsFilterQuery(
         string connectionString, IReadOnlyCollection<string> contractIds, CancellationToken cancellationToken);
 
-    private const string DatabasePrefix = "pqs-";
     private const string SlotSuffix = "-validator-1";
     private const string SlotWithoutPqsDatabase = "d-validator-1";
 
@@ -284,10 +283,20 @@ internal static class PqsLane
     {
         var consequence = requirePqs ? "--require-pqs is set, so the run fails." : "skipping.";
         output.WriteLine($"  PQS is not available ({PqsAvailability.DescribeCause(exception)}); {consequence} {HowToEnable(connectionString)}");
+        if (PqsAvailability.IsConnectionRefusedAnywhere(exception))
+            output.WriteLine(HowToReachPostgres(connectionString));
+    }
+
+    private static string HowToReachPostgres(string connectionString)
+    {
+        var slotKey = PqsConnectionString.SlotEnvKeyOf(connectionString);
+        return $"  Tried Postgres at {PqsConnectionString.Endpoint(connectionString)}. If LocalNet publishes it on another host port, " +
+               $"set CANTON_LOCALNET_{slotKey}_PQS_PORT to that port " +
+               $"(or the Port in CANTON_LOCALNET_{slotKey}_PQS_CONNECTION_STRING, which takes precedence).";
     }
 
     private static string SlotOf(string database) =>
-        database.StartsWith(DatabasePrefix, StringComparison.Ordinal) ? database[DatabasePrefix.Length..] : database;
+        database.StartsWith(PqsConnectionString.DatabasePrefix, StringComparison.Ordinal) ? database[PqsConnectionString.DatabasePrefix.Length..] : database;
 
     private static string HowToEnable(string connectionString)
     {

@@ -9,6 +9,28 @@ after a release takes a fourth identifier, for example `0.6.0-preview.3.1`.
 
 ## [Unreleased]
 
+## [0.8.1] — 2026-11-21
+
+### Added
+
+- **`CANTON_LOCALNET_<SLOT>_PQS_PORT`** — a port-only setting for the PQS Postgres connection, for a LocalNet whose Postgres is published on another host port (for example `5433` because a local Postgres already holds `5432`). Without it the demo connects to `5432`. The slot keys the name like the connection-string variable (`CANTON_LOCALNET_A_VALIDATOR_1_PQS_PORT`), and `CANTON_LOCALNET_<SLOT>_PQS_CONNECTION_STRING` still takes precedence when both are set. A value that is not a TCP port (1-65535) stops the demo before it touches the ledger and exits `78`. When PQS cannot be reached because Postgres refuses the connection, section 6 now names the host and port it tried and points at the setting.
+- **A `Done in <N>s` line ends every run that gets past the configuration check** — the demo prints how long the run took after its last line, on success and on failure alike. A configuration failure (exit `78`) prints no timing line.
+
+### Fixed
+
+- **A Daml rejection no longer ends with "not a known LocalNet reachability issue"** — when the ledger is reachable and rejects a command (for example `DAML_FAILURE` from a failed `require`, or `CONTRACT_NOT_FOUND`), the demo now prints a short block instead of the reachability text: `✗ <step> failed over <transport>: <template>.<choice>` (for example `✗ propose failed over gRPC: TransferFactory.TransferFactory_Transfer`), then the `code` with its category, the `message` pulled out of Canton's long interpretation-error string (the full text when it does not match), the `command id` when the failure carries one, and a one-line `hint` for the codes it knows. An unknown code prints no `hint` line, and a failure with no error code is reported by its transport status with a pointer to the LocalNet logs. The reachability guidance still appears only for real connection problems, and exit codes are unchanged.
+
+- **The PQS timeout hint no longer prints the Postgres password** — the `psql` line shown when PQS does not project a contract now ends at `user=...`, so the password (the LocalNet default or the one in `CANTON_LOCALNET_<SLOT>_PQS_CONNECTION_STRING`) no longer reaches stdout or CI logs. `psql` prompts for it, or reads `PGPASSWORD`.
+
+### Changed
+
+- **The demo's source is grouped by concern, and the README says where to start** — `src/MiniDemo/` keeps `Program.cs` (the entry point) and `MiniDemoRunner.cs` (the code that calls the SDK) at its root and moves the helper files into `Config/`, `Preflight/`, `Ledger/`, `Pqs/`, `Errors/` and `Reporting/`; the unit tests mirror those folders. The README names the two files to read first, and the layout and code-walkthrough guides follow the new paths. Namespaces, behaviour and exit codes are unchanged.
+- **The .NET SDK requirement reads as a major version** — the README, the quickstart prerequisites and the troubleshooting guide now say the demo needs .NET SDK major version 11 (`11.0.100` or a later `11.x`) and that `global.json` refuses any other major, newer ones included. A new "Get the .NET 11 SDK" section shows how to install it next to the SDK a package manager provides (`dotnet-install.sh --channel 11.0`) and why `rollForward` stays `latestMinor`.
+- **.NET 11** — the demo, its bindings project and its tests now target `net11.0` and build with .NET SDK `11.0.100` (C# 15, the compiler default; no `LangVersion` is set). Building and running the demo needs the .NET 11 SDK, and CI installs it from `global.json`. `Microsoft.Extensions.DependencyInjection` and `Microsoft.Extensions.Logging.Console` move to `11.0.0`. The Canton .NET SDK packages move to `0.8.1`, whose libraries target `net10.0` and run unchanged in a `net11.0` app, and the bundled Daml codegen runs on the .NET 11 runtime. The bindings under `obj/<Configuration>/` now sit in a `net11.0` folder. The pinned-versions table also reads the current `OpenTelemetry.Exporter.OpenTelemetryProtocol` pin.
+- **Canton .NET SDK `0.8.1`** — every `Daml.*` and `Canton.Ledger.*` package and the `Daml.Codegen.CSharp.MSBuild` package (whose `Dpm` mode pins the `dpm-codegen-cs` component `0.8.1`) move from `0.8.0` to `0.8.1`. The demo needs no code change. Regenerate the bindings once after pulling it by deleting `src/MiniDemo.Contracts/obj/` so the MSBuild codegen re-emits them.
+- **LocalNet `v0.10.2-1`** — the LocalNet testing package (`0.10.2.1`) and the CI LocalNet pin move to `v0.10.2-1`, which carries Splice 0.10.2 (Canton 3.7.3, protocol version 37). A LocalNet stack created on `v0.10.1-2` can log scan ERROR lines about the rewards reference store until `canton-localnet down --volumes` recreates it; a fresh stack does not.
+- **Splice `holding-v2` and `transfer-instruction-v2` bindings `1.0.0.22`** — the Splice `holding-v2` and `transfer-instruction-v2` C# bindings move from `1.0.0.21` to `1.0.0.22`. The demo needs no code change.
+
 ## [0.8.0] — 2026-11-10
 
 ### Changed
@@ -269,7 +291,8 @@ Needs a Canton **LocalNet 0.6.11** up (JSON `:11975` / gRPC `:11901`) and the `d
 
 📖 Start at the [README](https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/blob/main/README.md) — it walks the whole Daml → codegen → run loop.
 
-[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/peacefulstudio/canton-dotnet-sdk-mini-demo/compare/v0.7.0-preview.1...v0.7.0

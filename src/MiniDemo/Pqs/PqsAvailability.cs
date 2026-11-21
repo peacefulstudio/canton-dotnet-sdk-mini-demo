@@ -14,6 +14,9 @@ internal static class PqsAvailability
         ExceptionChain.Flatten(exception).Any(current =>
             IsUnavailableDatabase(current) || IsConnectionRefused(current));
 
+    public static bool IsConnectionRefusedAnywhere(Exception exception) =>
+        ExceptionChain.Flatten(exception).Any(IsConnectionRefused);
+
     public static string DescribeCause(Exception cause) =>
         string.Join(' ', cause.Message.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 

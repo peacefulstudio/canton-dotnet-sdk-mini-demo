@@ -44,13 +44,15 @@ internal sealed class MiniDemoRunner
     private readonly IPqsClient? _pqsClient;
     private readonly string _pqsConnectionString;
     private readonly bool _requirePqs;
+    private readonly DemoProgress _progress;
 
     public MiniDemoRunner(
         LocalnetFixture fixture,
         IReadOnlyList<LedgerTransport> transports,
         IPqsClient? pqsClient = null,
         string pqsConnectionString = PqsConnectionString.DefaultConnectionString,
-        bool requirePqs = false)
+        bool requirePqs = false,
+        DemoProgress? progress = null)
     {
         ArgumentNullException.ThrowIfNull(fixture);
         ArgumentNullException.ThrowIfNull(transports);
@@ -61,6 +63,7 @@ internal sealed class MiniDemoRunner
         _pqsClient = pqsClient;
         _pqsConnectionString = pqsConnectionString;
         _requirePqs = requirePqs;
+        _progress = progress ?? new DemoProgress();
     }
 
     private LedgerTransport IssuerAndAliceTransport => _transports[0];
@@ -76,7 +79,9 @@ internal sealed class MiniDemoRunner
         var issuance = await IssueAsync(parties, instrumentKey, ct);
         var bobHoldings = await TransferTwoStepAsync(parties, instrumentKey, issuance, ct);
 
+        _progress.Enter("cross-transport verification");
         await VerifyEveryTransportSeesEveryAssetAsync(CrossTransportSection, _transports, bobHoldings, parties.Bob, ct);
+        _progress.Enter("failure lane");
         await FailureLane.RunAsync(FailureLaneSection, _transports, parties, Console.Out, ct);
         await RunPqsLaneAsync(
             PqsLaneSection, _pqsClient, _pqsConnectionString, bobHoldings, parties.Bob, "bob", Console.Out, _requirePqs, ct);
@@ -89,15 +94,16 @@ internal sealed class MiniDemoRunner
 
     private async Task<(DemoParties Parties, UserRightsLease RightsLease)> BootstrapAsync(CancellationToken ct)
     {
+        _progress.Enter("bootstrap");
         Console.WriteLine($"== {BootstrapSection}. Bootstrap ==");
         var darPath = DarLocator.Resolve();
         Console.WriteLine($"Uploading DAR: {darPath}");
         var uploadOutcome = await _fixture.UploadDarAsync(darPath, ct);
         Console.WriteLine($"DAR upload outcome: {uploadOutcome}");
 
-        var issuer = await _fixture.AllocatePartyAsync("issuer", "Issuer", ct);
-        var alice = await _fixture.AllocatePartyAsync("alice", "Alice", ct);
-        var bob = await _fixture.AllocatePartyAsync("bob", "Bob", ct);
+        var issuer = await _fixture.AllocatePartyAsync("issuer", ct);
+        var alice = await _fixture.AllocatePartyAsync("alice", ct);
+        var bob = await _fixture.AllocatePartyAsync("bob", ct);
         Console.WriteLine($"issuer = {issuer.PartyId}");
         Console.WriteLine($"alice  = {alice.PartyId}");
         Console.WriteLine($"bob    = {bob.PartyId}");
@@ -124,11 +130,14 @@ internal sealed class MiniDemoRunner
         {
             var transport = _transports[index];
             var name = index == 0 ? DemoInstrument : ShowcaseInstrument;
+            _progress.Enter("create instrument", transport.Name);
             await CreateInstrumentAsync(transport.Client, new Instrument(parties.Issuer, name), transport.Name, transport.ResultStyle, ct);
         }
 
         var writer = IssuerAndAliceTransport;
+        _progress.Enter("create transfer factory", writer.Name);
         var factoryCid = await CreateTransferFactoryAsync(writer.Client, parties, writer.Name, ct);
+        _progress.Enter("mint", writer.Name);
         var aliceHoldingCid = await MintByKeyAsync(
             writer.Client, instrumentKey, parties.Issuer, parties.Alice, "alice", AliceMintAmount, writer.Name, ct);
         return new Issuance(factoryCid, aliceHoldingCid);
@@ -141,26 +150,35 @@ internal sealed class MiniDemoRunner
         var writer = IssuerAndAliceTransport;
         var acceptor = BobTransport;
 
+        _progress.Enter("read ledger end", writer.Name);
         var windowStart = await writer.Client.GetLedgerEndAsync(cancellationToken: ct);
         var proposal = ProposalFor(parties, instrumentKey, issuance.AliceHoldingCid, DateTimeOffset.UtcNow);
+        _progress.Enter("propose", writer.Name);
         var instructionCid = await ProposeAsync(writer.Client, issuance.FactoryCid, proposal, writer.Name, ct);
 
+        _progress.Enter("read pending holding", writer.Name);
         var lockedHolding = await ReportPendingHoldingAsync(writer.Client, proposal, writer.Name, ct);
         await ReadPendingHoldingFromPqsAsync(
             _pqsClient, _pqsConnectionString, proposal, new ContractId<DemoAsset>(lockedHolding.ContractId),
             Console.Out, _requirePqs, ct);
 
+        _progress.Enter("read disclosure", writer.Name);
         var disclosed = await HoldingQuery.ReadDisclosureAsync(writer.Client, parties.Issuer, lockedHolding.ContractId, ct);
         Console.WriteLine(
             $"  disclose issuer reads the locked holding's typed Disclosure from its {writer.Name} ACS query " +
             $"({disclosed.CreatedEventBlob.Length} bytes) and hands it to bob off-ledger");
 
+        _progress.Enter("accept", acceptor.Name);
         var acceptedCid = await AcceptWithDisclosureAsync(acceptor.Client, instructionCid, disclosed, parties.Bob, acceptor.Name, ct);
+        _progress.Enter("read ledger end", writer.Name);
         var windowEnd = await writer.Client.GetLedgerEndAsync(cancellationToken: ct);
+        _progress.Enter("observe update stream");
         await ObserveTransferOnEveryTransportAsync(
             _transports, parties.Bob, acceptedCid, windowStart, windowEnd, UpdateStreamObserver.DefaultTimeout, Console.Out, ct);
+        _progress.Enter("mint", writer.Name);
         var mintedCid = await MintByKeyAsync(
             writer.Client, instrumentKey, parties.Issuer, parties.Bob, "bob", BobMintAmount, writer.Name, ct);
+        _progress.Enter("total supply", writer.Name);
         await VerifyTotalSupplyAsync(writer.Client, instrumentKey, parties.Issuer, writer.Name, ct);
 
         return

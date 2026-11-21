@@ -10,9 +10,11 @@ internal static class LocalnetConfiguration
     public static string? FindProblem(IReadOnlyDictionary<string, string?> env)
     {
         LocalnetEndpoints endpoints;
+        LocalnetProfile profile;
         try
         {
-            endpoints = EndpointDiscovery.Resolve(EndpointDiscovery.ResolveProfile(env), env);
+            profile = EndpointDiscovery.ResolveProfile(env);
+            endpoints = EndpointDiscovery.Resolve(profile, env);
         }
         catch (InvalidOperationException incompleteConfiguration)
         {
@@ -21,6 +23,6 @@ internal static class LocalnetConfiguration
 
         return string.IsNullOrWhiteSpace(endpoints.ValidatorUserId)
             ? $"{EndpointDiscovery.ValidatorUserIdEnv} is set but blank.\nUnset it to use the slot's default validator user id, or set it to a real user id."
-            : null;
+            : PqsConnectionString.FindPortProblem(profile, env);
     }
 }
